@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda function triggered by SQS and writing to DynamoDB 
+Resources:
+  LambdaFunction:  
+    Type: AWS::Lambda::Function
+    Properties:
+      handler: index.putItem
+      # The machine architecture to run code on.
+      Architectures: 
+        - arm64
+      Runtime: python3.12
+      # CapacityProviderConfig: 
+      #   CapacityProviderConfig
+      # Code: 
+      #   Code
+      # CodeSigningConfigArn: String
+      # DeadLetterConfig: 
+      #   DeadLetterConfig
+      # Description: String
+      # DurableConfig: 
+      #   DurableConfig
+      # Environment: 
+      #   Environment
+      # EphemeralStorage: 
+      #   EphemeralStorage
+      # FileSystemConfigs: 
+      #   - FileSystemConfig
+      # FunctionName: String
+      # FunctionScalingConfig: 
+      #   FunctionScalingConfig
+      # ImageConfig: 
+      #   ImageConfig
+      # KmsKeyArn: String
+      # Layers: 
+      #   - String
+      # LoggingConfig: 
+      #   LoggingConfig
+      # MemorySize: Integer
+      # PackageType: String
+      # PublishToLatestPublished: Boolean
+      # RecursiveLoop: String
+      # ReservedConcurrentExecutions: Integer
+      # Role: String
+      # Runtime: String
+      # RuntimeManagementConfig: 
+      #   RuntimeManagementConfig
+      # SnapStart: 
+      #   SnapStart
+      # Tags: 
+      #   - Tag
+      # TenancyConfig: 
+      #   TenancyConfig
+      # Timeout: Integer
+      # TracingConfig: 
+      #   TracingConfig
+      # VpcConfig: 
+      #   VpcConfig
+  RootRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+  RootInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref RootRole
