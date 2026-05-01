@@ -5,11 +5,15 @@ Parameters:
     Type: String
     Description: S3 bucket where the CloudFormation templates associated with this project are stored
     Default: "serverless-web-backend-project-bucket"
+  ProjectName:
+    Type: String
+    Description: Name of the project (used for resource naming)
+
 Resources:
   LambdaFunctionAPIGWToDynamoDB:  
     Type: AWS::Lambda::Function
     Properties:
-      Handler: index.putItem
+      Handler: lambda_sqs_dynamodb.putItem
       # The machine architecture to run code on.
       Architectures: 
         - arm64
@@ -69,6 +73,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
+             # TODO: Make the service specific to your account and region, e.g. lambda.amazonaws.com
               Service:
                 - lambda.amazonaws.com
             Action:
