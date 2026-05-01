@@ -8,12 +8,13 @@ Parameters:
   StageName:
     Type: String
     Default: prod
-    AllowedValues: [dev, staging, prod]
+    AllowedValues: [staging, prod]
     Description: Deployment stage name
   
   ProjectName:
     Type: String
     Description: Name of the project (used for resource naming)
+    Default: "ServerlessWebBackend"
   
   OrderQueueArn:
     Type: String
@@ -23,14 +24,6 @@ Parameters:
     Type: String
     Description: Name of the SQS queue for order messages
 
-  AwsRegion:
-    Type: String
-    Description: AWS region (supplied by root stack)
-
-  AwsAccountId:
-    Type: String
-    Description: AWS account ID (supplied by root stack)
-
   # UserQueueArn:
   #   Type: String
   #   Description: ARN of the SQS queue for user messages
@@ -39,6 +32,13 @@ Parameters:
   #   Type: String
   #   Description: URL of the SQS queue for user messages
 
+  AwsRegion:
+    Type: String
+    Description: AWS region (supplied by root stack)
+
+  AwsAccountId:
+    Type: String
+    Description: AWS account ID (supplied by root stack)
 
 # ============================================================
 # RESOURCES
@@ -64,12 +64,11 @@ Resources:
             Principal:
               Service: apigateway.amazonaws.com
             Action: sts:AssumeRole
-            # Use in upgraded version
-            # Condition:
-            #   StringEquals:
-            #     aws:SourceAccount: !Ref AWS::AccountId
-            #   ArnLike:
-            #     aws:SourceArn: !Sub "arn:aws:execute-api:${AwsRegion}:${AwsAccountId}:*"
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AwsAccountId
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:execute-api:${AwsRegion}:${AwsAccountId}:*"
       # Inline policy
       Policies:
         - PolicyName: ApiGatewaySQSSendMessage
@@ -95,7 +94,7 @@ Resources:
   ApiGatewayLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub "/aws/apigateway/my-api-${ProjectName}"
+      LogGroupName: !Sub "/aws/apigateway/RestApi-${ProjectName}"
       RetentionInDays: 7
 
   # ----------------------------------------------------------
@@ -106,7 +105,7 @@ Resources:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Sub "apigw-rest-api-${ProjectName}"
-      Description: REST API with /order and /user resources backed by SQS
+      Description: REST API with /order resources backed by SQS
       ApiKeySourceType: HEADER
       EndpointConfiguration:
         Types:
@@ -302,7 +301,7 @@ Resources:
       RestApiId: !Ref RestApi
       DeploymentId: !Ref ApiDeployment
       StageName: !Ref StageName
-      Description: !Sub "${StageName} stage"
+      Description: !Sub "${StageName} stage from project ${ProjectName}"
       # Structured access logging
       AccessLogSetting:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
@@ -333,7 +332,7 @@ Outputs:
   RestApiId:
     Description: ID of the REST API
     Value: !Ref RestApi
-    Export:
+    Export:  # globally accessible reference (within the region/account)
       Name: !Sub "${AWS::StackName}-RestApiId"
 
   APIEndpoint:
@@ -342,11 +341,11 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-APIEndpoint"
 
-  ApiGatewayToSQSRoleArn:
+  RoleApiGwSqsArn:
     Description: ARN of the IAM role used by API Gateway to write to SQS
-    Value: !GetAtt ApiGatewayToSQSRole.Arn
+    Value: !GetAtt RoleApiGwSqs.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-ApiGwRoleArn"
+      Name: !Sub "${AWS::StackName}-RoleApiGwSqsArn"
 
   OrderResourceId:
     Description: API Gateway resource ID for /order
@@ -354,8 +353,8 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-OrderResourceId"
 
-  UserResourceId:
-    Description: API Gateway resource ID for /user
-    Value: !Ref UserResource
-    Export:
-      Name: !Sub "${AWS::StackName}-UserResourceId"
+  # UserResourceId:
+  #   Description: API Gateway resource ID for /user
+  #   Value: !Ref UserResource
+  #   Export:
+  #     Name: !Sub "${AWS::StackName}-UserResourceId"
