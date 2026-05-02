@@ -101,7 +101,7 @@ Resources:
   # 3. REST API
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-apigateway-restapi.html
   # ----------------------------------------------------------
-  RestApi:
+  RestApiToSQS:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Sub "apigw-rest-api-${ProjectName}"
@@ -118,15 +118,15 @@ Resources:
   OrderResource:
     Type: AWS::ApiGateway::Resource
     Properties:
-      RestApiId: !Ref RestApi
-      ParentId: !GetAtt RestApi.RootResourceId
+      RestApiId: !Ref RestApiToSQS
+      ParentId: !GetAtt RestApiToSQS.RootResourceId
       PathPart: order
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-apigateway-method.html
   # POST /order → SQS (enqueue a new order)
   OrderPostMethod:
     Type: AWS::ApiGateway::Method
     Properties:
-      RestApiId: !Ref RestApi
+      RestApiId: !Ref RestApiToSQS
       ResourceId: !Ref OrderResource
       HttpMethod: POST
       AuthorizationType: NONE            # swap to AWS_IAM / COGNITO_USER_POOLS as needed
@@ -289,7 +289,7 @@ Resources:
       # - UserPostMethod
       # - UserGetMethod
     Properties:
-      RestApiId: !Ref RestApi
+      RestApiId: !Ref RestApiToSQS
       Description: !Sub "Deployment for API for ${ProjectName} project"
 
   # ----------------------------------------------------------
@@ -298,7 +298,7 @@ Resources:
   ApiStage:
     Type: AWS::ApiGateway::Stage
     Properties:
-      RestApiId: !Ref RestApi
+      RestApiId: !Ref RestApiToSQS
       DeploymentId: !Ref ApiDeployment
       StageName: !Ref StageName
       Description: !Sub "${StageName} stage from project ${ProjectName}"
@@ -329,15 +329,15 @@ Resources:
 # ============================================================
 Outputs:
 
-  RestApiId:
+  ApiGwRestApiId:
     Description: ID of the REST API
-    Value: !Ref RestApi
+    Value: !Ref RestApiToSQS
     Export:  # globally accessible reference (within the region/account)
       Name: !Sub "${AWS::StackName}-RestApiId"
 
   APIEndpoint:
     Description: Invoke URL for the deployed stage
-    Value: !Sub "https://${RestApi}.execute-api.${AwsRegion}.amazonaws.com/${StageName}"
+    Value: !Sub "https://${RestApiToSQS}.execute-api.${AwsRegion}.amazonaws.com/${StageName}"
     Export:
       Name: !Sub "${AWS::StackName}-APIEndpoint"
 

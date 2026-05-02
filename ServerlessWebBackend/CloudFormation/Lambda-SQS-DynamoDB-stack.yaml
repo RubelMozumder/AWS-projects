@@ -10,7 +10,7 @@ Parameters:
     Description: Name of the project (used for resource naming)
 
 Resources:
-  LambdaFunctionAPIGWToDynamoDB:  
+  LambdaFunctionApiGwToDynamoDB:  
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_sqs_dynamodb.putItem
@@ -18,7 +18,7 @@ Resources:
       Architectures: 
         - arm64
       Runtime: python3.12
-      # CapacityProviderConfig: 
+      # CapacityProviderConfig:
       #   CapacityProviderConfig
       Code: 
         S3Bucket: !Ref ServerlessWebBackendProjectBucket
@@ -110,7 +110,7 @@ Resources:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       EventSourceArn: !ImportValue QueueArn-SQS-APIGW-Lambda
-      FunctionName: !Ref LambdaFunctionAPIGWToDynamoDB
+      FunctionName: !Ref LambdaFunctionApiGwToDynamoDB
       BatchSize: 10
       Enabled: true
   # RootInstanceProfile:
@@ -119,3 +119,10 @@ Resources:
   #     Path: /
   #     Roles:
   #       - !Ref RoleLambdaSQSDanamoDB
+
+Outputs:
+  LambdaFunctionApiGwToDynamoDBArn:
+    Description: ARN of the Lambda function that will be triggered by API Gateway
+    Value: !GetAtt LambdaFunctionAPIGWToDynamoDB.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-LambdaFunctionApiGwToDynamoDBArn"

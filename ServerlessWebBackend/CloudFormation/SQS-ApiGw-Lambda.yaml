@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SQS queue service with API Gateway to trigger Lambda function
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name of the project (used for resource naming)
+    Default: "ServerlessWebBackend"
+  ApiGwRestApiId:
+    Type: String
+    Description: The ID of the API Gateway REST API to which the Lambda function will be integrated
+  LambdaFunctionApiGwToDynamoDBArn:
+    Type: String
+    Description: The ARN of the Lambda function that will be triggered by API Gateway
+
+Resources:
+  SQSQueueApiGwToLambdaFunction:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${ProjectName}-ApiGwToLambdaFunction-Queue"
+      # ContentBasedDeduplication: Boolean
+      # DelaySeconds: Integer
+      FifoQueue: false
+      # KmsDataKeyReusePeriodSeconds: Integer
+      # KmsMasterKeyId: String
+      MaximumMessageSize: 2048
+      MessageRetentionPeriod: 86400  # 1 days in seconds
+      # QueueArn: String
+      ReceiveMessageWaitTimeSeconds: 20
+      # RedrivePolicy: 
+      #   RedrivePolicy
+      # Tags: 
+      #   - Tag
+  Outputs:
+    QueueUrl:
+      Description: URL of the SQS queue
+      Value: !Ref SQSQueueApiGwToLambdaFunction
+      Export:
+        Name: !Sub "${AWS::StackName}-ApiGwToLambdaFunction-QueueUrl"
+    QueueArn:
+      Description: ARN of the SQS queue
+      Value: !GetAtt SQSQueueApiGwToLambdaFunction.Arn
+      Export:
+        Name: !Sub "${AWS::StackName}-ApiGwToLambdaFunction-QueueArn"
+    QueueName:
+      Description: Name of the SQS queue
+      Value: !GetAtt SQSQueueApiGwToLambdaFunction.QueueName
+      Export:
+        Name: !Sub "${AWS::StackName}-ApiGwToLambdaFunction-QueueName"
