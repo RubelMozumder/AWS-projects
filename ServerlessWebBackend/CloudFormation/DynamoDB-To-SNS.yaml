@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: | 
-  DynamoDB table with stream enabled and processed and consumed by Lambda function.
+  DynamoDB table with stream enabled, stream consumed by Lambda function and passed to SNS topic
 # --------------------------------------------------------------
 # Sections
 #   Parameters
@@ -74,6 +74,14 @@ Resources:
                   - 'dynamodb:GetShardIterator'
                   - 'dynamodb:ListStreams'
                 Resource: !GetAtt DynamoDBTableWithStream.StreamArn
+        - PolicyName: !Sub "${ProjectName}-LambdaPublishToSNS-Policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sns:Publish'
+                Resource: !Ref SNSDynamoDBStreamToTopicArn
   LambdaDynamoDbStreamToSns:
     Type: AWS::Lambda::Function
     Properties:
@@ -82,7 +90,7 @@ Resources:
         Code:
           S3Bucket: !Ref S3Bucket
           S3Key: !Ref S3Key
-        Handler: lambda_dynamodb_to_sns.pulish_to_sns
+        Handler: lambda_dynamodb_to_sns.publish_to_sns
         Runtime: python3.9
   # Trigger Lambda from DynamoDB stream
   DynamoDBStreamMapping:
