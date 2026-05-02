@@ -73,6 +73,13 @@ fi
 
 OUTPUT="$(to_abs_path "$OUTPUT")"
 
+if [[ -d "$OUTPUT" ]]; then
+  package_name="$(basename "$(dirname "$SRC_DIR")")"
+  OUTPUT="$OUTPUT/${package_name}.zip"
+elif [[ "$OUTPUT" != *.zip ]]; then
+  OUTPUT="${OUTPUT}.zip"
+fi
+
 if [[ ! -d "$SRC_DIR" ]]; then
   echo "Source directory not found: $SRC_DIR"
   exit 1
@@ -93,7 +100,8 @@ echo "Python: $PYTHON_BIN"
 # -----------------------------
 # Clean build directory
 # -----------------------------
-rm -rf "$BUILD_DIR" "$OUTPUT"
+rm -rf "$BUILD_DIR"
+rm -f "$OUTPUT"
 mkdir -p "$BUILD_DIR"
 mkdir -p "$(dirname "$OUTPUT")"
 
