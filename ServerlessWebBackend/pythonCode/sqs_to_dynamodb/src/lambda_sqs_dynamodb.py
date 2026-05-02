@@ -12,7 +12,7 @@ def generate_id(length=12):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choices(chars, k=length))
 
-def putItem(event, context):
+def put_item(event, context):
     """Put an order in DynamoDB table"""
     print("Received event: " + json.dumps(event, indent=2))
     for record in event["Records"]:

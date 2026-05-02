@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: | 
+  DynamoDB table with stream enabled and processed and consumed by Lambda function.
+# --------------------------------------------------------------
+# Sections
+#   Parameters
+#   Resources
+#   Outputs
+# --------------------------------------------------------------
+Parameters:
+    ProjectName:
+      Type: String
+      Description: Name of the project (used for resource naming)
+      Default: "ServerlessWebBackend"
+    TableName:
+      Type: String
+      Description: Name of the DynamoDB table
+      Default: "ServerlessWebBackend-Table"
+    SNSDynamoDBStreamToTopicArn:
+      Type: String
+      Description: The ARN of the SNS topic to which the DynamoDB stream will be published
+    S3Bucket:
+      Type: String
+      Description: S3 bucket where the Lambda function code is stored
+    S3Key:
+      Type: String
+      Description: S3 key for the Lambda function code zip file
+
+# --------------------------------------------------------------
+# Resources
+#   DynamoDBTableWithStream
+#   RoleLambdaDynamoDBStreamToSNS
+#   DynamoDBStreamProcessingFunction
+#   DynamoDBStreamMapping
+# --------------------------------------------------------------
+Resources:
+  DynamoDBTableWithStream:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      KeySchema: 
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+  RoleLambdaDynamoDBStreamToSNS:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        Fn::Join:
+        - "-"
+        - - "role-dynamodb-lambda-sns"
+          - !Ref ProjectName
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: !Sub "${ProjectName}-LambdaDynamoDBStreamToSNS-Policy"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:GetRecords'
+                  - 'dynamodb:DescribeStream'
+                  - 'dynamodb:GetShardIterator'
+                  - 'dynamodb:ListStreams'
+                Resource: !GetAtt DynamoDBTableWithStream.StreamArn
+  LambdaDynamoDbStreamToSns:
+    Type: AWS::Lambda::Function
+    Properties:
+        FunctionName: !Sub "${ProjectName}-lambda-dynamodb-to-sns"
+        Role: !GetAtt RoleLambdaDynamoDBStreamToSNS.Arn
+        Code:
+          S3Bucket: !Ref S3Bucket
+          S3Key: !Ref S3Key
+        Handler: lambda_dynamodb_to_sns.pulish_to_sns
+        Runtime: python3.9
+  # Trigger Lambda from DynamoDB stream
+  DynamoDBStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt DynamoDBTableWithStream.StreamArn
+      FunctionName: !Ref LambdaDynamoDbStreamToSns
+      StartingPosition: LATEST
+      BatchSize: 10
+      Enabled: true
+
+Outputs:
+  DynamoDBTableWithStreamDbArn:
+    Description: ARN of the DynamoDB table with stream enabled
+    Value: !Ref DynamoDBTableWithStream
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-TableArn"
+
+  DynamoDBTableWithStreamStremArn:
+    Description: ARN of the DynamoDB stream
+    Value: !GetAtt DynamoDBTableWithStream.StreamArn
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-StreamArn"
+
+  LambdaDynamoDbStreamToSnsArn:
+    Description: ARN of the Lambda function that processes DynamoDB stream and publishes to SNS topic
+    Value: !GetAtt LambdaDynamoDbStreamToSns.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-Lambda

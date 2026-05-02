@@ -8,12 +8,19 @@ Parameters:
   ProjectName:
     Type: String
     Description: Name of the project (used for resource naming)
+    Default: "ServerlessWebBackend"
+  S3Bucket:
+    Type: String
+    Description: S3 bucket where the Lambda function code is stored
+  S3Key:
+    Type: String
+    Description: S3 key for the Lambda function code zip file
 
 Resources:
   LambdaFunctionApiGwToDynamoDB:  
     Type: AWS::Lambda::Function
     Properties:
-      Handler: lambda_sqs_dynamodb.putItem
+      Handler: lambda_sqs_dynamodb.put_item
       # The machine architecture to run code on.
       Architectures: 
         - arm64
@@ -21,8 +28,8 @@ Resources:
       # CapacityProviderConfig:
       #   CapacityProviderConfig
       Code: 
-        S3Bucket: !Ref ServerlessWebBackendProjectBucket
-        S3Key: code/lambda-sqs-dynamodb.zip
+        S3Bucket: !Ref S3Bucket
+        S3Key: !Ref S3Key
       Role: !GetAtt RoleLambdaSQSDanamoDB.Arn
       # CodeSigningConfigArn: String
       # DeadLetterConfig: 
