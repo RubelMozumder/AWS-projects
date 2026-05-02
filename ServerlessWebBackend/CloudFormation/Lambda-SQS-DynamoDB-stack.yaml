@@ -31,47 +31,6 @@ Resources:
         S3Bucket: !Ref S3Bucket
         S3Key: !Ref S3Key
       Role: !GetAtt RoleLambdaSQSDanamoDB.Arn
-      # CodeSigningConfigArn: String
-      # DeadLetterConfig: 
-      #   DeadLetterConfig
-      # Description: String
-      # DurableConfig: 
-      #   DurableConfig
-      # Environment: 
-      #   Environment
-      # EphemeralStorage: 
-      #   EphemeralStorage
-      # FileSystemConfigs: 
-      #   - FileSystemConfig
-      # FunctionName: String
-      # FunctionScalingConfig: 
-      #   FunctionScalingConfig
-      # ImageConfig: 
-      #   ImageConfig
-      # KmsKeyArn: String
-      # Layers: 
-      #   - String
-      # LoggingConfig: 
-      #   LoggingConfig
-      # MemorySize: Integer
-      # PackageType: String
-      # PublishToLatestPublished: Boolean
-      # RecursiveLoop: String
-      # ReservedConcurrentExecutions: Integer
-      # Runtime: String
-      # RuntimeManagementConfig: 
-      #   RuntimeManagementConfig
-      # SnapStart: 
-      #   SnapStart
-      # Tags: 
-      #   - Tag
-      # TenancyConfig: 
-      #   TenancyConfig
-      # Timeout: Integer
-      # TracingConfig: 
-      #   TracingConfig
-      # VpcConfig: 
-      #   VpcConfig
   RoleLambdaSQSDanamoDB:
     Type: 'AWS::IAM::Role'
     Properties:
