@@ -1,10 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Lambda function triggered by SQS and writing to DynamoDB
+# ---------------------------------------------------------------
+# Sections
+#   Parameters
+#   Resources
+#     - LambdaFunctionApiGwToDynamoDB
+#     - RoleLambdaSQSDynamoDB
+#     - SQSTrigger
+#  Outputs
+# ---------------------------------------------------------------
 Parameters:
-  ServerlessWebBackendProjectBucket:
-    Type: String
-    Description: S3 bucket where the CloudFormation templates associated with this project are stored
-    Default: "serverless-web-backend-project-bucket"
   ProjectName:
     Type: String
     Description: Name of the project (used for resource naming)
@@ -15,23 +20,36 @@ Parameters:
   S3Key:
     Type: String
     Description: S3 key for the Lambda function code zip file
+  SQSQueueArn:
+    Type: String
+    Description: ARN of the SQS queue that will trigger the Lambda function
+  DynamoDBTableArn:
+    Type: String
+    Description: ARN of the DynamoDB table to which the Lambda function will write data
+  DynamoDBTableName:
+    Type: String
+    Description: Name of the DynamoDB table to which the Lambda function will write data
 
 Resources:
-  LambdaFunctionApiGwToDynamoDB:  
+  LambdaFunctionApiGwToDynamoDB:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub "${ProjectName}-lambda-sqs-to-dynamodb" 
       Handler: lambda_sqs_dynamodb.put_item
       # The machine architecture to run code on.
       Architectures: 
         - arm64
       Runtime: python3.12
-      # CapacityProviderConfig:
-      #   CapacityProviderConfig
       Code: 
         S3Bucket: !Ref S3Bucket
         S3Key: !Ref S3Key
-      Role: !GetAtt RoleLambdaSQSDanamoDB.Arn
-  RoleLambdaSQSDanamoDB:
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DynamoDBTableName
+      Timeout: 30  # in sec
+      MemorySize: 256 # in MB
+      Role: !GetAtt RoleLambdaSQSDynamoDB.Arn
+  RoleLambdaSQSDynamoDB:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -39,7 +57,6 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-             # TODO: Make the service specific to your account and region, e.g. lambda.amazonaws.com
               Service:
                 - lambda.amazonaws.com
             Action:
@@ -48,7 +65,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: LambdaHandleSQSQueuePolicy
+        - PolicyName: SQS-to-lambda-queue-policy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -58,7 +75,7 @@ Resources:
                 - 'sqs:DeleteMessage'
                 - 'sqs:GetQueueAttributes'
                 - 'sqs:ChangeMessageVisibility'
-                Resource: !ImportValue QueueArn-SQS-APIGW-Lambda
+                Resource: !Ref SQSQueueArn
         - PolicyName: LambdaWriteToDynamoDBPolicy
           PolicyDocument: 
             Version: "2012-10-17"
@@ -70,25 +87,19 @@ Resources:
                   - 'dynamodb:GetItem'
                   - 'dynamodb:DeleteItem'
                   - 'dynamodb:DescribeTable'
-                Resource: !ImportValue TableArn-DynamoDB-Lambda
+                Resource: !Ref DynamoDBTableArn
   # EventSourceMapping: Consumer configuration
   SQSTrigger:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
-      EventSourceArn: !ImportValue QueueArn-SQS-APIGW-Lambda
+      EventSourceArn: !Ref SQSQueueArn
       FunctionName: !Ref LambdaFunctionApiGwToDynamoDB
       BatchSize: 10
       Enabled: true
-  # RootInstanceProfile:
-  #   Type: 'AWS::IAM::InstanceProfile'
-  #   Properties:
-  #     Path: /
-  #     Roles:
-  #       - !Ref RoleLambdaSQSDanamoDB
 
 Outputs:
   LambdaFunctionApiGwToDynamoDBArn:
     Description: ARN of the Lambda function that will be triggered by API Gateway
-    Value: !GetAtt LambdaFunctionAPIGWToDynamoDB.Arn
+    Value: !GetAtt LambdaFunctionApiGwToDynamoDB.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-LambdaFunctionApiGwToDynamoDBArn"
+      Name: !Sub "${AWS::StackName}-lambda-function-api-gw-to-dynamodb-arn"

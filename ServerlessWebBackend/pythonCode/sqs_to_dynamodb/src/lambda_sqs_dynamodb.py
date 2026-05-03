@@ -1,12 +1,12 @@
 import boto3, json
 import random
+import string
+import os
 
 global CLIENT, TABLE_NAME
 CLIENT = boto3.client("dynamodb")
-TABLE_NAME = 'orders'
+TABLE_NAME = os.environ.get("TABLE_NAME", None)  # Default to "OrdersTable" if not set
 
-import random
-import string
 
 def generate_id(length=12):
     chars = string.ascii_letters + string.digits

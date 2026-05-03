@@ -45,6 +45,11 @@ Parameters:
   #   Type: String
   #   Description: URL of the SQS queue for user messages
 
+Conditions: 
+  IsProdOrStaging: !Or
+      - !Equals [!Ref StageName, "prod"]
+      - !Equals [!Ref StageName, "staging"]
+
 Resources:
   # ----------------------------------------------------------
   # 1. IAM Role — allows API Gateway to call SQS
@@ -92,16 +97,10 @@ Resources:
   # ----------------------------------------------------------
   ApiGatewayLogGroup:
     Type: AWS::Logs::LogGroup
-    Conditions: 
-      IsProdOrStaging: !Or
-          - !Equals [!Ref StageName, "prod"]
-          - !Equals [!Ref StageName, "staging"]
+
    Properties:
-      LogGroupName: !Sub "/aws/apigateway/RestApi-${ProjectName}"
-      RetentionInDays: !If
-        - IsProdOrStaging
-        - 30
-        - 7          
+     LogGroupName: !Sub "/aws/apigateway/RestApi-${ProjectName}"
+     RetentionInDays: !If [ IsProdOrStaging, 30, 7 ]
 
   # ----------------------------------------------------------
   # 3. REST API
@@ -226,25 +225,25 @@ Outputs:
     Description: ID of the REST API
     Value: !Ref RestApiToSQS
     Export:  # globally accessible reference (within the region/account)
-      Name: !Sub "${AWS::StackName}-RestApiId"
+      Name: !Sub "${AWS::StackName}-rest-api-id"
 
   APIEndpoint:
     Description: Invoke URL for the deployed stage
     Value: !Sub "https://${RestApiToSQS}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
     Export:
-      Name: !Sub "${AWS::StackName}-APIEndpoint"
+      Name: !Sub "${AWS::StackName}-api-endpoint"
 
   RoleApiGwToSqsArn:
     Description: ARN of the IAM role used by API Gateway to write to SQS
     Value: !GetAtt RoleApiGwToSqs.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-RoleApiGwToSqsArn"
+      Name: !Sub "${AWS::StackName}-role-apiGw-to-sqs-arn"
 
   OrderResourceId:
     Description: API Gateway resource ID for /order
     Value: !Ref OrderResource
     Export:
-      Name: !Sub "${AWS::StackName}-OrderResourceId"
+      Name: !Sub "${AWS::StackName}-order-resource-id"
 
   # UserResourceId:
   #   Description: API Gateway resource ID for /user
