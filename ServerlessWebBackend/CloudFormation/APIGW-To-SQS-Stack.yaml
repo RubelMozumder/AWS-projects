@@ -1,9 +1,19 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: API Gateway Stack
+# ============================================================
+# Sections:
+#   Parameters
+#   Resources
+#     RoleApiGwToSqs
+#     ApiGatewayLogGroup
+#     RestApiToSQS
+#     OrderResource
+#     OrderPostMethod
+#     ApiDeployment
+#     ApiStage
+# 
+# ============================================================
 
-# ============================================================
-# PARAMETERS
-# ============================================================
 Parameters:
   StageName:
     Type: String
@@ -40,21 +50,18 @@ Parameters:
     Type: String
     Description: AWS account ID (supplied by root stack)
 
-# ============================================================
-# RESOURCES
-# ============================================================
 Resources:
   # ----------------------------------------------------------
   # 1. IAM Role — allows API Gateway to call SQS
   # source: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-resource-iam-role.html
   # ----------------------------------------------------------
-  RoleApiGwSqs:
+  RoleApiGwToSqs:
     Type: AWS::IAM::Role
     Properties:
       RoleName:
         Fn:Join:
           - "-"
-          - - "role-apigw-sqs"
+          - - "role-apigw-to-sqs"
             - !Ref ProjectName
       Description: Allows API Gateway to send messages to SQS queues
       AssumeRolePolicyDocument:
@@ -71,7 +78,7 @@ Resources:
                 aws:SourceArn: !Sub "arn:aws:execute-api:${AwsRegion}:${AwsAccountId}:*"
       # Inline policy
       Policies:
-        - PolicyName: !Sub "${ProjectName}-ApiGatewaySQSSendMessage-Policy"
+        - PolicyName: !Sub "${ProjectName}-ApiGatewayToSQSSendMessage-Policy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -139,7 +146,7 @@ Resources:
         # AWS service integration URI structure: arn:aws:apigateway:{region}:{service}:{type}/{path}
         # possible values for {type}: action|path|proxy
         Uri: !Sub "arn:aws:apigateway:${AwsRegion}:sqs:path/${AwsAccountId}/${OrderQueueName}"
-        Credentials: !GetAtt RoleApiGwSqs.Arn
+        Credentials: !GetAtt RoleApiGwToSqs.Arn
         RequestParameters:
           integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
         # Map the incoming JSON body to the SQS MessageBody parameter
@@ -229,11 +236,11 @@ Outputs:
     Export:
       Name: !Sub "${AWS::StackName}-APIEndpoint"
 
-  RoleApiGwSqsArn:
+  RoleApiGwToSqsArn:
     Description: ARN of the IAM role used by API Gateway to write to SQS
-    Value: !GetAtt RoleApiGwSqs.Arn
+    Value: !GetAtt RoleApiGwToSqs.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-RoleApiGwSqsArn"
+      Name: !Sub "${AWS::StackName}-RoleApiGwToSqsArn"
 
   OrderResourceId:
     Description: API Gateway resource ID for /order
