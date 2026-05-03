@@ -2,11 +2,15 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: | 
   DynamoDB table with stream enabled, stream consumed by Lambda function and passed to SNS topic
 # --------------------------------------------------------------
-# Sections
+# Sections:
 #   Parameters
 #   Resources
+#     DynamoDBTableWithStream
+#     RoleLambdaDynamoDBStreamToSNS
+#     LambdaDynamoDbStreamToSns
+#     DynamoDBStreamMapping
 #   Outputs
-# --------------------------------------------------------------
+# -------------------------------------------------------------- --------------------------------------------------------------
 Parameters:
     ProjectName:
       Type: String
@@ -16,7 +20,7 @@ Parameters:
       Type: String
       Description: Name of the DynamoDB table
       Default: "ServerlessWebBackend-Table"
-    SNSDynamoDBStreamToTopicArn:
+    SNSDynamoDBStreamToSNSTopicArn:
       Type: String
       Description: The ARN of the SNS topic to which the DynamoDB stream will be published
     S3Bucket:
@@ -26,19 +30,15 @@ Parameters:
       Type: String
       Description: S3 key for the Lambda function code zip file
 
-# --------------------------------------------------------------
-# Resources
-#   DynamoDBTableWithStream
-#   RoleLambdaDynamoDBStreamToSNS
-#   DynamoDBStreamProcessingFunction
-#   DynamoDBStreamMapping
-# --------------------------------------------------------------
+
 Resources:
   DynamoDBTableWithStream:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref TableName
       BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
       KeySchema: 
         - AttributeName: id
           KeyType: HASH
@@ -81,7 +81,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - 'sns:Publish'
-                Resource: !Ref SNSDynamoDBStreamToTopicArn
+                Resource: !Ref SNSDynamoDBStreamToSNSTopicArn
   LambdaDynamoDbStreamToSns:
     Type: AWS::Lambda::Function
     Properties:
@@ -91,7 +91,14 @@ Resources:
           S3Bucket: !Ref S3Bucket
           S3Key: !Ref S3Key
         Handler: lambda_dynamodb_to_sns.publish_to_sns
-        Runtime: python3.9
+        Runtime: python3.12
+        Timeout: 30
+        MemorySize: 128
+        Architectures:
+          - arm64
+        Environment:
+          Variables:
+            SNS_TOPIC_ARN: !Ref SNSDynamoDBStreamToSNSTopicArn
   # Trigger Lambda from DynamoDB stream
   DynamoDBStreamMapping:
     Type: AWS::Lambda::EventSourceMapping
@@ -105,18 +112,18 @@ Resources:
 Outputs:
   DynamoDBTableWithStreamDbArn:
     Description: ARN of the DynamoDB table with stream enabled
-    Value: !Ref DynamoDBTableWithStream
+    Value: !GetAtt DynamoDBTableWithStream.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-TableArn"
+      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-table-arn"
 
-  DynamoDBTableWithStreamStremArn:
+  DynamoDBTableWithStreamStreamArn:
     Description: ARN of the DynamoDB stream
     Value: !GetAtt DynamoDBTableWithStream.StreamArn
     Export:
-      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-StreamArn"
+      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-stream-arn"
 
   LambdaDynamoDbStreamToSnsArn:
     Description: ARN of the Lambda function that processes DynamoDB stream and publishes to SNS topic
     Value: !GetAtt LambdaDynamoDbStreamToSns.Arn
     Export:
-      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-Lambda
+      Name: !Sub "${AWS::StackName}-lambda-dynamodb-to-sns-lambda-arn"
