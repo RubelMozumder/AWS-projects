@@ -1,3 +1,6 @@
+# Warning: PREREQUISITE: account-bootstrap-stack must be deployed
+# in this region before deploying this stack, otherwise
+# CloudWatch execution logging (MethodSettings) will not work.
 AWSTemplateFormatVersion: "2010-09-09"
 Description: API Gateway Stack
 # ============================================================
@@ -17,8 +20,8 @@ Description: API Gateway Stack
 Parameters:
   StageName:
     Type: String
-    Default: prod
-    AllowedValues: [staging, prod]
+    Default: dev
+    AllowedValues: [dev, staging, prod]
     Description: Deployment stage name
   
   ProjectName:
@@ -42,14 +45,6 @@ Parameters:
   #   Type: String
   #   Description: URL of the SQS queue for user messages
 
-  AwsRegion:
-    Type: String
-    Description: AWS region (supplied by root stack)
-
-  AwsAccountId:
-    Type: String
-    Description: AWS account ID (supplied by root stack)
-
 Resources:
   # ----------------------------------------------------------
   # 1. IAM Role — allows API Gateway to call SQS
@@ -59,7 +54,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName:
-        Fn:Join:
+        Fn::Join:
           - "-"
           - - "role-apigw-to-sqs"
             - !Ref ProjectName
@@ -73,9 +68,9 @@ Resources:
             Action: sts:AssumeRole
             Condition:
               StringEquals:
-                aws:SourceAccount: !Ref AwsAccountId
+                aws:SourceAccount: !Ref AWS::AccountId
               ArnLike:
-                aws:SourceArn: !Sub "arn:aws:execute-api:${AwsRegion}:${AwsAccountId}:*"
+                aws:SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*"
       # Inline policy
       Policies:
         - PolicyName: !Sub "${ProjectName}-ApiGatewayToSQSSendMessage-Policy"
@@ -90,9 +85,6 @@ Resources:
               # - Effect: Allow
               #   Action: sqs:SendMessage
               #   Resource: !Ref UserQueueArn
-      # Optional: allow API Gateway to push logs to CloudWatch
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
 
   # ----------------------------------------------------------
   # 2. CloudWatch Log Group for API Gateway access logs
@@ -100,9 +92,16 @@ Resources:
   # ----------------------------------------------------------
   ApiGatewayLogGroup:
     Type: AWS::Logs::LogGroup
-    Properties:
+    Conditions: 
+      IsProdOrStaging: !Or
+          - !Equals [!Ref StageName, "prod"]
+          - !Equals [!Ref StageName, "staging"]
+   Properties:
       LogGroupName: !Sub "/aws/apigateway/RestApi-${ProjectName}"
-      RetentionInDays: 7
+      RetentionInDays: !If
+        - IsProdOrStaging
+        - 30
+        - 7          
 
   # ----------------------------------------------------------
   # 3. REST API
@@ -113,7 +112,6 @@ Resources:
     Properties:
       Name: !Sub "apigw-rest-api-${ProjectName}"
       Description: REST API with /order resources backed by SQS
-      ApiKeySourceType: HEADER
       EndpointConfiguration:
         Types:
           - REGIONAL
@@ -145,7 +143,7 @@ Resources:
         # SQS SendMessage action via service proxy
         # AWS service integration URI structure: arn:aws:apigateway:{region}:{service}:{type}/{path}
         # possible values for {type}: action|path|proxy
-        Uri: !Sub "arn:aws:apigateway:${AwsRegion}:sqs:path/${AwsAccountId}/${OrderQueueName}"
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${OrderQueueName}"
         Credentials: !GetAtt RoleApiGwToSqs.Arn
         RequestParameters:
           integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
@@ -232,7 +230,7 @@ Outputs:
 
   APIEndpoint:
     Description: Invoke URL for the deployed stage
-    Value: !Sub "https://${RestApiToSQS}.execute-api.${AwsRegion}.amazonaws.com/${StageName}"
+    Value: !Sub "https://${RestApiToSQS}.execute-api.${AWS::Region}.amazonaws.com/${StageName}"
     Export:
       Name: !Sub "${AWS::StackName}-APIEndpoint"
 
