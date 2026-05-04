@@ -110,7 +110,7 @@ Resources:
       Enabled: true
 
 Outputs:
-  DynamoDBTableWithStreamDbArn:
+  DynamoDBTableWithStreamDBArn:
     Description: ARN of the DynamoDB table with stream enabled
     Value: !GetAtt DynamoDBTableWithStream.Arn
     Export:

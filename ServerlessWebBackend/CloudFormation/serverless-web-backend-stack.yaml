@@ -1,0 +1,80 @@
+# serverless-web-backend-stack.yaml
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Serverless Web Backend — orchestrates all nested stacks
+
+Parameters:
+  TemplateBucketName:
+    Type: String
+    Default: bucket-for-projects-321
+    Description: URI of the S3 bucket contains the CloudFormation templates
+  TemplateBucketPrefix:
+    Type: String
+    Default: serverless-web-backend/cloudformation
+    Description: Prefix in the S3 bucket for the CloudFormation templates
+  PythonCodeBucketName:
+    Type: String
+    Default: bucket-for-projects-321
+    Description: Name of the S3 bucket containing the Python code for Lambda functions
+  PythonCodeBucketPrefix:
+    Type: String
+    Default: serverless-web-backend/pythoncode
+    Description: Prefix in the S3 bucket for the Python code for Lambda functions
+  ProjectName:
+    Type: String
+    Description: Name of the project (used for resource naming)
+    Default: "ServerlessWebBackend"
+  DynamoDBTableName:
+    Type: String
+    Description: Name of the DynamoDB table to which the Lambda function will write data
+    Default: "ServerlessWebBackend-Table"
+
+Resources:
+  SNSTopicStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      # Description: Stack for SNS topic and subscriptions, published by DynamoDB stream
+      TemplateURL: !Sub "https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplateBucketPrefix}/SNS-Topic.yaml"
+      Parameters:
+        ProjectName: !Ref ProjectName
+        EmailEndpoint: rubel.mozumder@outlook.com
+        PhoneEndpoint: +4917620380232
+
+  DynamoDBToSNSStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplateBucketPrefix}/DynamoDB-To-SNS.yaml"
+      Parameters:
+        ProjectName: !Ref ProjectName
+        TableName: !Ref DynamoDBTableName
+        SNSDynamoDBStreamToSNSTopicArn: !GetAtt SNSTopicStack.Outputs.SNSTopicDynamoDBStreamArn
+        S3Bucket: !Ref PythonCodeBucketName
+        S3Key: !Sub "${PythonCodeBucketPrefix}/dynamodb_to_sns.zip"
+
+  SQSToLambdaStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplateBucketPrefix}/SQS-ApiGw-Lambda.yaml"
+      Parameters:
+        ProjectName: !Ref ProjectName
+
+  LambdaSQSToDynamoDBStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplateBucketPrefix}/Lambda-SQS-To-DynamoDB-stack.yaml"
+      Parameters:
+        ProjectName: !Ref ProjectName
+        S3Bucket: !Ref PythonCodeBucketName
+        S3Key: !Sub "${PythonCodeBucketPrefix}/sqs_to_lambda.zip"
+        SQSQueueArn: !GetAtt "SQSToLambdaStack.Outputs.QueueArn"
+        DynamoDBTableArn: !GetAtt DynamoDBToSNSStack.Outputs.DynamoDBTableWithStreamDBArn
+        DynamoDBTableName: !Ref DynamoDBTableName
+
+  ApiGwToSqsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplateBucketPrefix}/APIGW-To-SQS-Stack.yaml"
+      Parameters:
+        ProjectName: !Ref ProjectName
+        StageName: dev
+        OrderQueueArn: !GetAtt "SQSToLambdaStack.Outputs.QueueArn"
+        OrderQueueName: !GetAtt "SQSToLambdaStack.Outputs.QueueName"
