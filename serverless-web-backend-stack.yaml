@@ -17,7 +17,7 @@ Parameters:
     Description: Name of the S3 bucket containing the Python code for Lambda functions
   PythonCodeBucketPrefix:
     Type: String
-    Default: serverless-web-backend/pythoncode
+    Default: serverless-web-backend/python-code
     Description: Prefix in the S3 bucket for the Python code for Lambda functions
   ProjectName:
     Type: String
@@ -64,7 +64,7 @@ Resources:
       Parameters:
         ProjectName: !Ref ProjectName
         S3Bucket: !Ref PythonCodeBucketName
-        S3Key: !Sub "${PythonCodeBucketPrefix}/sqs_to_lambda.zip"
+        S3Key: !Sub "${PythonCodeBucketPrefix}/sqs_to_dynamodb.zip"
         SQSQueueArn: !GetAtt "SQSToLambdaStack.Outputs.QueueArn"
         DynamoDBTableArn: !GetAtt DynamoDBToSNSStack.Outputs.DynamoDBTableWithStreamDBArn
         DynamoDBTableName: !Ref DynamoDBTableName

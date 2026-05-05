@@ -9,6 +9,7 @@ Description: SNS service for messages from DynamoDB stream via Lambda function
 #     - SNS Subscription
 #   Outputs
 # --------------------------------------------------------------
+
 Parameters:
   ProjectName:
     Type: String
@@ -27,21 +28,21 @@ Resources:
     Properties:
       TopicName: !Sub "${ProjectName}-dynamodb-stream"
 
-  TestMailSubscription:
-    Type: AWS::SNS::Subscription
-    Properties:
-      Endpoint: !Ref EmailEndpoint
-      TopicArn: !Ref SNSTopicDynamoDBStream
-      Protocol: email
-      DeliveryPolicy: 
-        healthyRetryPolicy:
-          numRetries: 45
-          minDelayTarget: 1
-          maxDelayTarget: 60
-          numNoDelayRetries: 3
-          numMinDelayRetries: 2 
-          numMaxDelayRetries: 35
-          backoffFunction: "exponential"
+  # TestMailSubscription:
+  #   Type: AWS::SNS::Subscription
+  #   Properties:
+  #     Endpoint: !Ref EmailEndpoint
+  #     TopicArn: !Ref SNSTopicDynamoDBStream
+  #     Protocol: email
+  #     DeliveryPolicy: 
+  #       healthyRetryPolicy:
+  #         numRetries: 45
+  #         minDelayTarget: 1
+  #         maxDelayTarget: 60
+  #         numNoDelayRetries: 3
+  #         numMinDelayRetries: 2 
+  #         numMaxDelayRetries: 35
+  #         backoffFunction: "exponential"
 
   PhoneSubscription:
     Type: AWS::SNS::Subscription
@@ -62,6 +63,6 @@ Resources:
 Outputs:
   SNSTopicDynamoDBStreamArn:
     Description: ARN of the SNS topic for DynamoDB stream
-    Value: !GetAtt SNSTopicDynamoDBStream.Arn
+    Value: !Ref SNSTopicDynamoDBStream
     Export:
       Name: !Sub "${AWS::StackName}-dynamodb-stream-topic-arn"
