@@ -21,7 +21,7 @@ Resources:
       QueueName: !Sub "${ProjectName}-api-gw-to-lambda-function-queue"
       # ContentBasedDeduplication: Boolean
       # DelaySeconds: Integer
-      FifoQueue: false
+      # FifoQueue: false
       # KmsDataKeyReusePeriodSeconds: Integer
       # KmsMasterKeyId: String
       MaximumMessageSize: 2048  # 2KB in bytes

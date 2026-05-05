@@ -20,6 +20,7 @@ Parameters:
   PhoneEndpoint:
     Type: String
     Description: Phone number to subscribe to the SNS topic (in E.164 format, e.g., +1234567890)
+
 Resources:
   SNSTopicDynamoDBStream:
     Type: AWS::SNS::Topic
@@ -30,20 +31,33 @@ Resources:
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: !Ref EmailEndpoint
-      TopicArn: !GetAtt SNSTopicDynamoDBStream.Arn
+      TopicArn: !Ref SNSTopicDynamoDBStream
       Protocol: email
       DeliveryPolicy: 
         healthyRetryPolicy:
-          numRetries: 3
+          numRetries: 45
+          minDelayTarget: 1
+          maxDelayTarget: 60
+          numNoDelayRetries: 3
+          numMinDelayRetries: 2 
+          numMaxDelayRetries: 35
+          backoffFunction: "exponential"
+
   PhoneSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: !Ref PhoneEndpoint
-      TopicArn: !GetAtt SNSTopicDynamoDBStream.Arn
+      TopicArn: !Ref SNSTopicDynamoDBStream
       Protocol: sms
       DeliveryPolicy: 
         healthyRetryPolicy:
-          numRetries: 3
+          numRetries: 45
+          minDelayTarget: 1
+          maxDelayTarget: 60
+          numNoDelayRetries: 3
+          numMinDelayRetries: 2
+          numMaxDelayRetries: 35
+          backoffFunction: "exponential"
 
 Outputs:
   SNSTopicDynamoDBStreamArn:

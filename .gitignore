@@ -1,0 +1,3 @@
+# Ignore all files in deploy_scripts except shell scripts
+deploy_scripts/*
+!deploy_scripts/*.sh
