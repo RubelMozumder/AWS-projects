@@ -90,7 +90,7 @@ Resources:
         Code:
           S3Bucket: !Ref S3Bucket
           S3Key: !Ref S3Key
-        Handler: lambda_dynamodb_to_sns.publish_to_sns
+        Handler: src.lambda_dynamodb_to_sns.publish_to_sns
         Runtime: python3.12
         Timeout: 30
         MemorySize: 128

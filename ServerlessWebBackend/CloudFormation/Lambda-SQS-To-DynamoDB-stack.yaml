@@ -35,7 +35,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${ProjectName}-lambda-sqs-to-dynamodb" 
-      Handler: lambda_sqs_dynamodb.put_item
+      Handler: src.lambda_sqs_dynamodb.put_item
       # The machine architecture to run code on.
       Architectures: 
         - arm64
