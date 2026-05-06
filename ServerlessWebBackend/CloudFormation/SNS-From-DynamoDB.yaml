@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: SNS service for messages from DynamoDB stream via Lambda function
+
+# --------------------------------------------------------------
+# Sections
+#   Parameters
+#   Resources
+#     - SNS Topic
+#     - SNS Subscription
+#   Outputs
+# --------------------------------------------------------------
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name of the project (used for resource naming)
+    Default: "ServerlessWebBackend"
+  EmailEndpoint:
+    Type: String
+    Description: Email address to subscribe to the SNS topic
+  PhoneEndpoint:
+    Type: String
+    Description: Phone number to subscribe to the SNS topic (in E.164 format, e.g., +1234567890)
+
+Resources:
+  SNSTopicDynamoDBStream:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${ProjectName}-dynamodb-stream"
+
+  # TestMailSubscription:
+  #   Type: AWS::SNS::Subscription
+  #   Properties:
+  #     Endpoint: !Ref EmailEndpoint
+  #     TopicArn: !Ref SNSTopicDynamoDBStream
+  #     Protocol: email
+  #     DeliveryPolicy: 
+  #       healthyRetryPolicy:
+  #         numRetries: 45
+  #         minDelayTarget: 1
+  #         maxDelayTarget: 60
+  #         numNoDelayRetries: 3
+  #         numMinDelayRetries: 2 
+  #         numMaxDelayRetries: 35
+  #         backoffFunction: "exponential"
+
+  PhoneSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !Ref PhoneEndpoint
+      TopicArn: !Ref SNSTopicDynamoDBStream
+      Protocol: sms
+      DeliveryPolicy: 
+        healthyRetryPolicy:
+          numRetries: 45
+          minDelayTarget: 1
+          maxDelayTarget: 60
+          numNoDelayRetries: 3
+          numMinDelayRetries: 2
+          numMaxDelayRetries: 35
+          backoffFunction: "exponential"
+
+Outputs:
+  SNSTopicDynamoDBStreamArn:
+    Description: ARN of the SNS topic for DynamoDB stream
+    Value: !Ref SNSTopicDynamoDBStream
+    Export:
+      Name: !Sub "${AWS::StackName}-dynamodb-stream-topic-arn"
