@@ -97,10 +97,8 @@ Resources:
   # ----------------------------------------------------------
   ApiGatewayLogGroup:
     Type: AWS::Logs::LogGroup
-
     Properties:
       LogGroupName: !Sub "/aws/apigateway/RestApi-${ProjectName}"
-      RetentionInDays: !If [ IsProdOrStaging, 30, 7 ]
 
   # ----------------------------------------------------------
   # 3. REST API
@@ -197,14 +195,15 @@ Resources:
       # Structured access logging
       AccessLogSetting:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
-        Format: >
-          {"requestId":"$context.requestId",
-           "ip":"$context.identity.sourceIp",
-           "method":"$context.httpMethod",
-           "resource":"$context.resourcePath",
-           "status":"$context.status",
-           "responseLength":"$context.responseLength",
-           "integrationLatency":"$context.integrationLatency"}
+        Format: !Join
+          - ""
+          - - '{"requestId":"$context.requestId"'
+            - ',"ip":"$context.identity.sourceIp"'
+            - ',"method":"$context.httpMethod"'
+            - ',"resource":"$context.resourcePath"'
+            - ',"status":"$context.status"'
+            - ',"responseLength":"$context.responseLength"'
+            - ',"integrationLatency":"$context.integrationLatency"}'
       # Per-method throttling and logging (applies to all methods)
       MethodSettings:
         - ResourcePath: "/*"
