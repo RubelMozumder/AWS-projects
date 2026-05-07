@@ -1,9 +1,15 @@
 import boto3
 import json
 import os
+from boto3.dynamodb.types import TypeDeserializer
 
 client = boto3.client("sns")
 SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN")
+DESERIALIZER = TypeDeserializer()
+
+
+def _deserialize_dynamodb_item(item):
+    return {k: DESERIALIZER.deserialize(v) for k, v in item.items()}
 
 
 def publish_to_sns(event, context):
@@ -14,15 +20,21 @@ def publish_to_sns(event, context):
     print("Received records:", len(records))
 
     for record in records:
-        if record.get("eventName") == "INSERT":
-            new_record = record.get("dynamodb", {}).get("NewImage", {})
+        event_name = record.get("eventName")
+        if event_name not in {"INSERT", "MODIFY"}:
+            continue
 
-            message = {"default": json.dumps(new_record)}
+        new_record = record.get("dynamodb", {}).get("NewImage", {})
+        if not new_record:
+            continue
 
-            response = client.publish(
-                TopicArn=SNS_TOPIC_ARN,
-                Message=json.dumps(message),
-                MessageStructure="json",
-            )
+        payload = _deserialize_dynamodb_item(new_record)
+        message = f"DynamoDB {event_name}: {json.dumps(payload, default=str)}"
 
-            print("SNS response:", response)
+        response = client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Message=message,
+            Subject="DynamoDB Change",
+        )
+
+        print("SNS response:", response)
