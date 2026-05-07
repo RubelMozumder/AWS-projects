@@ -2,3 +2,4 @@
 deploy_scripts/*
 !deploy_scripts/*.sh
 build/**/*
+**/build/**/*
