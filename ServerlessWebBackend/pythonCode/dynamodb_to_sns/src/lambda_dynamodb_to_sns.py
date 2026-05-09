@@ -5,6 +5,7 @@ from boto3.dynamodb.types import TypeDeserializer
 
 client = boto3.client("sns")
 SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN")
+SMS_MESSAGE_TYPE = os.environ.get("SMS_MESSAGE_TYPE", "Transactional")
 DESERIALIZER = TypeDeserializer()
 
 
@@ -35,6 +36,12 @@ def publish_to_sns(event, context):
             TopicArn=SNS_TOPIC_ARN,
             Message=message,
             Subject="DynamoDB Change",
+            MessageAttributes={
+                "AWS.SNS.SMS.SMSType": {
+                    "DataType": "String",
+                    "StringValue": SMS_MESSAGE_TYPE,
+                }
+            },
         )
 
         print("SNS response:", response)

@@ -29,6 +29,11 @@ Parameters:
     S3Key:
       Type: String
       Description: S3 key for the Lambda function code zip file
+    SMSMessageType:
+      Type: String
+      AllowedValues: [Promotional, Transactional]
+      Default: Transactional
+      Description: SMS message type used for SNS publishes
 
 
 Resources:
@@ -72,8 +77,11 @@ Resources:
                   - 'dynamodb:GetRecords'
                   - 'dynamodb:DescribeStream'
                   - 'dynamodb:GetShardIterator'
-                  - 'dynamodb:ListStreams'
                 Resource: !GetAtt DynamoDBTableWithStream.StreamArn
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:ListStreams'
+                Resource: '*'
         - PolicyName: !Sub "${ProjectName}-LambdaPublishToSNS-Policy"
           PolicyDocument:
             Version: '2012-10-17'
@@ -99,6 +107,7 @@ Resources:
         Environment:
           Variables:
             SNS_TOPIC_ARN: !Ref SNSDynamoDBStreamToSNSTopicArn
+            SMS_MESSAGE_TYPE: !Ref SMSMessageType
   # Trigger Lambda from DynamoDB stream
   DynamoDBStreamMapping:
     Type: AWS::Lambda::EventSourceMapping

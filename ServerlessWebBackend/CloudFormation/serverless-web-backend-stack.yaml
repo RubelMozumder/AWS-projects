@@ -27,6 +27,29 @@ Parameters:
     Type: String
     Description: Name of the DynamoDB table to which the Lambda function will write data
     Default: "ServerlessWebBackend-Table"
+  NotificationEmailEndpoint:
+    Type: String
+    Default: rubel.mozumder@outlook.com
+    Description: Email endpoint for SNS notifications
+  NotificationPhoneEndpoint:
+    Type: String
+    Default: "+4917620380232"
+    Description: SMS endpoint for SNS notifications in E.164 format
+  EnableEmailSubscription:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: Whether to create the SNS email subscription
+  EnableSMSSubscription:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: Whether to create the SNS SMS subscription
+  SMSMessageType:
+    Type: String
+    AllowedValues: [Promotional, Transactional]
+    Default: Transactional
+    Description: SMS message type used when publishing through SNS
 
 Resources:
   SNSTopicStack:
@@ -36,8 +59,10 @@ Resources:
       TemplateURL: !Sub "https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/${TemplateBucketPrefix}/SNS-From-DynamoDB.yaml"
       Parameters:
         ProjectName: !Ref ProjectName
-        EmailEndpoint: rubel.mozumder@outlook.com
-        PhoneEndpoint: +4917620380232
+        EmailEndpoint: !Ref NotificationEmailEndpoint
+        PhoneEndpoint: !Ref NotificationPhoneEndpoint
+        EnableEmailSubscription: !Ref EnableEmailSubscription
+        EnableSMSSubscription: !Ref EnableSMSSubscription
 
   DynamoDBToSNSStack:
     Type: AWS::CloudFormation::Stack
@@ -49,6 +74,7 @@ Resources:
         SNSDynamoDBStreamToSNSTopicArn: !GetAtt SNSTopicStack.Outputs.SNSTopicDynamoDBStreamArn
         S3Bucket: !Ref PythonCodeBucketName
         S3Key: !Sub "${PythonCodeBucketPrefix}/dynamodb_to_sns.zip"
+        SMSMessageType: !Ref SMSMessageType
 
   SQSToLambdaStack:
     Type: AWS::CloudFormation::Stack
