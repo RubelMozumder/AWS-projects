@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Lambda function triggered by SQS and writing to DynamoDB
+# ---------------------------------------------------------------
+# Sections
+#   Parameters
+#   Resources
+#     - LambdaFunctionApiGwToDynamoDB
+#     - RoleLambdaSQSDynamoDB
+#     - SQSTrigger
+#  Outputs
+# ---------------------------------------------------------------
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name of the project (used for resource naming)
+    Default: "ServerlessWebBackend"
+  S3Bucket:
+    Type: String
+    Description: S3 bucket where the Lambda function code is stored
+  S3Key:
+    Type: String
+    Description: S3 key for the Lambda function code zip file
+  SQSQueueArn:
+    Type: String
+    Description: ARN of the SQS queue that will trigger the Lambda function
+  DynamoDBTableArn:
+    Type: String
+    Description: ARN of the DynamoDB table to which the Lambda function will write data
+  DynamoDBTableName:
+    Type: String
+    Description: Name of the DynamoDB table to which the Lambda function will write data
+
+Resources:
+  LambdaFunctionApiGwToDynamoDB:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-lambda-sqs-to-dynamodb" 
+      Handler: src.lambda_sqs_dynamodb.put_item
+      # The machine architecture to run code on.
+      Architectures: 
+        - arm64
+      Runtime: python3.12
+      Code: 
+        S3Bucket: !Ref S3Bucket
+        S3Key: !Ref S3Key
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DynamoDBTableName
+      Timeout: 30  # in sec
+      MemorySize: 256 # in MB
+      Role: !GetAtt RoleLambdaSQSDynamoDB.Arn
+  RoleLambdaSQSDynamoDB:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SQS-to-lambda-queue-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                - 'sqs:ReceiveMessage'
+                - 'sqs:DeleteMessage'
+                - 'sqs:GetQueueAttributes'
+                - 'sqs:ChangeMessageVisibility'
+                Resource: !Ref SQSQueueArn
+        - PolicyName: LambdaWriteToDynamoDBPolicy
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:DeleteItem'
+                  - 'dynamodb:DescribeTable'
+                Resource: !Ref DynamoDBTableArn
+  # EventSourceMapping: Consumer configuration
+  SQSTrigger:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !Ref SQSQueueArn
+      FunctionName: !Ref LambdaFunctionApiGwToDynamoDB
+      BatchSize: 10
+      Enabled: true
+
+Outputs:
+  LambdaFunctionApiGwToDynamoDBArn:
+    Description: ARN of the Lambda function that will be triggered by API Gateway
+    Value: !GetAtt LambdaFunctionApiGwToDynamoDB.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-lambda-function-api-gw-to-dynamodb-arn"

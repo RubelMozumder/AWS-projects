@@ -1,0 +1,41 @@
+# If a resource has one instance per account/region regardless of how many 
+# projects exist → it belongs in a bootstrap stack that no 
+# project stack deletes.
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Account bootstrap stack to set up necessary permissions and resources 
+  for all projects in the account.
+
+# ---------------------------------------------------------------
+# Sections:
+#   Parameters
+#   Resources
+#     - ApiGatewayCloudWatchRole
+#     - ApiGatewayAccount
+# ----------------------------------------------------------------
+Parameters:
+  Region:
+    Type: String
+    Description: AWS region (supplied by root stack)
+    Default: eu-central-1
+
+Resources:
+  RoleApiGatewayToCloudWatch:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ApiGatewayCloudWatchLogsRole   # one stable name, account-wide
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt RoleApiGatewayToCloudWatch.Arn
