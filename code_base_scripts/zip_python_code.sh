@@ -4,11 +4,20 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$PROJECT_ROOT/.." && pwd)"
 
 to_abs_path() {
   local path="$1"
+  local project_name
+
+  project_name="$(basename "$PROJECT_ROOT")"
+
   if [[ "$path" = /* ]]; then
     echo "$path"
+  elif [[ "$path" == "$project_name"/* ]]; then
+    echo "$REPO_ROOT/$path"
+  elif [[ -e "$REPO_ROOT/$path" ]]; then
+    echo "$REPO_ROOT/$path"
   else
     echo "$PROJECT_ROOT/$path"
   fi
@@ -64,6 +73,13 @@ fi
 
 OUTPUT="$(to_abs_path "$OUTPUT")"
 
+if [[ -d "$OUTPUT" ]]; then
+  package_name="$(basename "$(dirname "$SRC_DIR")")"
+  OUTPUT="$OUTPUT/${package_name}.zip"
+elif [[ "$OUTPUT" != *.zip ]]; then
+  OUTPUT="${OUTPUT}.zip"
+fi
+
 if [[ ! -d "$SRC_DIR" ]]; then
   echo "Source directory not found: $SRC_DIR"
   exit 1
@@ -84,7 +100,8 @@ echo "Python: $PYTHON_BIN"
 # -----------------------------
 # Clean build directory
 # -----------------------------
-rm -rf "$BUILD_DIR" "$OUTPUT"
+rm -rf "$BUILD_DIR"
+rm -f "$OUTPUT"
 mkdir -p "$BUILD_DIR"
 mkdir -p "$(dirname "$OUTPUT")"
 
