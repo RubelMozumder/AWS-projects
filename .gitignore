@@ -4,3 +4,6 @@ deploy_scripts/*
 build/**/*
 **/build/**/*
 DebugSession
+**/.terraform*/
+**/.terraform*
+.tfvars
