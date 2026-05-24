@@ -6,13 +6,11 @@
 
 # ---- Project variables --------------------------------------
 
-variable "project_name" {
-  description = "Project name applied to every resource name. Typically '<project>-<environment>' (e.g. 'eq-analytics-dev')."
-  type        = string
-}
-
-variable "environment" {
-  description = "Deployment environment (e.g. dev, staging, prod). Used in resource naming and tagging."
+variable "name_prefix" {
+  description = <<-EOT
+    Prefix applied to every resource name. Typically '<project>-<environment>' 
+    (e.g. 'eq-analytics-dev').
+  EOT
   type        = string
 }
 

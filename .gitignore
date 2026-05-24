@@ -6,4 +6,4 @@ build/**/*
 DebugSession
 **/.terraform*/
 **/.terraform*
-.tfvars
+terraform.tfvars
