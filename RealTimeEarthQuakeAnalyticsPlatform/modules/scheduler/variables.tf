@@ -1,76 +1,144 @@
 # =============================================================
-# Root Module — Input Variables
+# Module: scheduler — Input Variables
 # =============================================================
 
-# ---- General ------------------------------------------------
+# ---- Naming -------------------------------------------------
 
-variable "aws_region" {
-  description = "AWS region where all resources will be deployed"
-  type        = string
-  default     = "eu-central-1"
-}
+# ---- Project variables --------------------------------------
 
-variable "project_name" {
-  description = "Short project name used as prefix for all resource names (lowercase, no spaces)"
-  type        = string
-  default     = "eq-analytics"
-
-  validation {
-    condition     = can(regex("^[a-z][a-z0-9-]{2,20}$", var.project_name))
-    error_message = "project_name must be lowercase, 3–20 characters, letters/numbers/hyphens only."
-  }
-}
-
-variable "environment" {
-  description = "Deployment environment label"
-  type        = string
-  default     = "dev"
-
-  validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "environment must be one of: dev, staging, prod."
-  }
-}
-
-# ---- Scheduler ----------------------------------------------
-
-variable "collection_interval" {
+variable "name_prefix" {
   description = <<-EOT
-    How often the EventBridge Scheduler triggers the Collector Lambda.
-    Supports rate() or cron() expressions.
-    Examples:
-      rate(5 minutes)   → every 5 minutes
-      rate(1 hour)      → every hour
-      cron(0 * * * ? *) → top of every hour
+    Prefix applied to every resource name. Typically '<project>-<environment>' 
+    (e.g. 'eq-analytics-dev').
+  EOT
+  type        = string
+}
+
+# ------ Event Scheduler variables ----------------------------
+
+variable "schedule_group_name" {
+  description = "Name for the EventBridge Scheduler schedule group."
+  type        = string
+}
+
+variable "schedule_name" {
+  description = "Name for the EventBridge schedule resource."
+  type        = string
+}
+
+# ---- Schedule -----------------------------------------------
+
+variable "schedule_expression" {
+  description = <<-EOT
+    When the schedule fires. Supports two formats:
+
+    rate expression → rate(<value> <unit>)
+      Examples:
+        rate(5 minutes)   fires every 5 minutes
+        rate(1 hour)      fires every hour
+        rate(1 day)       fires once per day
+
+    cron expression → cron(<min> <hour> <day> <month> <weekday> <year>)
+      Examples:
+        cron(*/5 * * * ? *)   every 5 minutes
+        cron(0 * * * ? *)     top of every hour
+        cron(0 6 * * ? *)     06:00 UTC daily
+
+    Note: EventBridge cron uses ? for "any" in day-of-month or
+    day-of-week (not * like standard Unix cron).
   EOT
   type        = string
   default     = "rate(5 minutes)"
+
+  validation {
+    condition     = can(regex("^(rate|cron)\\(.+\\)$", var.schedule_expression))
+    error_message = "schedule_expression must start with 'rate(' or 'cron(' and end with ')'."
+  }
 }
 
+variable "enabled" {
+  description = <<- EOT
+    Controls schedule state. true = ENABLED (actively firing). false = DISABLED
+    (paused, useful during development or debugging).
+  EOT
+  type        = bool
+  default     = true
+}
+
+# ---- Target Lambda ------------------------------------------
+
+variable "target_lambda_arn" {
+  description = <<-EOT
+    ARN of the Collector Lambda function that the scheduler invokes.
+    Provided by the processing module once built:
+      module.processing.collector_lambda_arn
+    During development, set via collector_lambda_arn_override in terraform.tfvars.
+  EOT
+  type        = string
+
+  validation {
+    condition     = can(regex("^arn:aws:lambda:[a-z0-9-]+:[0-9]{12}:function:.+$", var.target_lambda_arn))
+    error_message = "target_lambda_arn must be a valid Lambda function ARN (arn:aws:lambda:<region>:<account>:function:<name>)."
+  }
+}
+
+# ---- USGS Feed ----------------------------------------------
+
 variable "usgs_feed_url" {
-  description = "Full USGS GeoJSON earthquake feed URL"
+  description = <<- EOT
+    Full URL of the USGS GeoJSON earthquake feed. 
+    Passed to the Collector Lambda as the event payload's feed_url field.
+  EOT
   type        = string
   default     = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson"
 }
 
 variable "usgs_feed_type" {
-  description = "USGS feed type identifier, passed to the Lambda in the event payload"
+  description = <<-EOT
+    Short identifier for the USGS feed type. Passed in the Lambda event
+    payload as feed_type. Used for logging and S3 partitioning.
+    Valid values mirror the USGS feed catalogue:
+      all_hour         → all events, last 60 minutes (most current)
+      all_day          → all events, last 24 hours
+      all_week         → all events, last 7 days
+      all_month        → all events, last 30 days
+      significant_week → significant events only, last 7 days
+      significant_month→ significant events only, last 30 days
+  EOT
   type        = string
   default     = "all_hour"
+
+  validation {
+    condition = contains([
+      "all_hour",
+      "all_day",
+      "all_week",
+      "all_month",
+      "significant_week",
+      "significant_month"
+    ], var.usgs_feed_type)
+    error_message = "usgs_feed_type must be one of: all_hour, all_day, all_week, all_month, significant_week, significant_month."
+  }
 }
 
-# ---- Development override -----------------------------------
-# Used during development before the processing module (Stack 3)
-# is built. Replace with module.processing.collector_lambda_arn
-# once the processing module exists.
+# ---- Dead-Letter Queue (optional) ---------------------------
 
-variable "collector_lambda_arn_override" {
+variable "dead_letter_queue_arn" {
   description = <<-EOT
-    Temporary override for the Collector Lambda ARN.
-    Used while the processing module is not yet deployed.
-    Once Stack 3 (processing) is built, remove this variable
-    and wire: target_lambda_arn = module.processing.collector_lambda_arn
+    ARN of an SQS queue to receive events that the scheduler
+    failed to deliver after all retries. Optional.
+    Will be provided by the observability module (Stack 6):
+      module.observability.scheduler_dlq_arn
+    Set to null to disable dead-letter handling during development.
   EOT
   type        = string
   default     = null
+}
+
+# ---- Tags ---------------------------------------------------
+
+variable "tags" {
+  description = "Map of tags applied to all resources in this module."
+  type        = map(string)
+  default     = {}
 }

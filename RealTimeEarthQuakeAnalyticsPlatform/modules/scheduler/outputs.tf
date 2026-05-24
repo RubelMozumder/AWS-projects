@@ -1,46 +1,35 @@
 # =============================================================
-# Root Module — Outputs
+# Module: scheduler — Outputs
 # =============================================================
-# Only the scheduler module is active right now.
-# Outputs from other modules will be uncommented as each is built.
+# These values are consumed by the root module (main.tf outputs.tf)
+# and potentially by the observability module for metric filtering.
 
-# ---- Scheduler ----------------------------------------------
-
-output "scheduler_schedule_arn" {
-  description = "ARN of the EventBridge schedule"
-  value       = module.scheduler.schedule_arn
+output "schedule_arn" {
+  description = "ARN of the EventBridge schedule. Use this to reference the schedule in CloudWatch alarms or IAM policies."
+  value       = aws_scheduler_schedule.usgs_collector.arn
 }
 
-output "scheduler_group_arn" {
-  description = "ARN of the EventBridge schedule group"
-  value       = module.scheduler.schedule_group_arn
+output "schedule_name" {
+  description = "Name of the EventBridge schedule."
+  value       = aws_scheduler_schedule.usgs_collector.name
+}
+
+output "schedule_group_arn" {
+  description = "ARN of the EventBridge schedule group."
+  value       = aws_scheduler_schedule_group.this.arn
+}
+
+output "schedule_group_name" {
+  description = "Name of the EventBridge schedule group."
+  value       = aws_scheduler_schedule_group.this.name
 }
 
 output "scheduler_role_arn" {
-  description = "ARN of the IAM role used by the EventBridge Scheduler"
-  value       = module.scheduler.scheduler_role_arn
+  description = "ARN of the IAM role assumed by EventBridge Scheduler to invoke the Collector Lambda."
+  value       = aws_iam_role.scheduler.arn
 }
 
-# ---- Foundation (TODO) -------------------------------------
-# output "data_bucket_name" {
-#   description = "Name of the S3 data lake bucket"
-#   value       = module.foundation.data_bucket_id
-# }
-
-# ---- Ingestion (TODO) --------------------------------------
-# output "api_gateway_invoke_url" {
-#   description = "Invoke URL for the ingestion API Gateway"
-#   value       = module.ingestion.api_gateway_invoke_url
-# }
-
-# ---- Processing (TODO) -------------------------------------
-# output "collector_lambda_name" {
-#   description = "Name of the Collector Lambda function"
-#   value       = module.processing.collector_lambda_name
-# }
-
-# ---- Analytics (TODO) --------------------------------------
-# output "athena_workgroup_name" {
-#   description = "Name of the Athena workgroup"
-#   value       = module.analytics.athena_workgroup_name
-# }
+output "scheduler_role_name" {
+  description = "Name of the IAM role. Useful for attaching additional policies in later modules."
+  value       = aws_iam_role.scheduler.name
+}

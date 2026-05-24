@@ -6,10 +6,10 @@
 # located in ./modules/<name>/.
 #
 # Build order (each depends on the one above it):
-#   1. foundation    → S3, IAM, KMS, Terraform backend
+#   1. foundation    → S3, IAM, KMS, Terraform backend   <-- Started to build
 #   2. ingestion     → API Gateway, Kinesis Firehose
 #   3. processing    → Collector Lambda, Transformer Lambda, DynamoDB
-#   4. scheduler     → EventBridge Scheduler          ← ACTIVE NOW
+#   4. scheduler     → EventBridge Scheduler          <-- ACTIVE
 #   5. analytics     → Glue Catalog, Athena
 #   6. observability → CloudWatch, SNS alerts
 #
