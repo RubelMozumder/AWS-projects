@@ -32,6 +32,93 @@ variable "environment" {
   }
 }
 
+# ---- S3 Prefixes and Data Lifecycle --------------------------------------------
+
+variable "raw_data_prefix" {
+  description = <<-EOT
+    S3 key prefix for raw earthquake records exactly as received
+    from the USGS feed — before any transformation.
+    Example path: raw/year=2025/month=05/day=23/hour=14/record.json.gz
+  EOT
+  type    = string
+  default = "raw/"
+}
+
+variable "processed_data_prefix" {
+  description = <<-EOT
+    S3 key prefix for enriched, normalised records written by
+    the Transformer Lambda in Parquet format.
+    Example path: processed/year=2025/month=05/day=23/record.parquet
+  EOT
+  type    = string
+  default = "processed/"
+}
+
+variable "athena_results_prefix" {
+  description = <<-EOT
+    S3 key prefix where Athena stores query result files (.csv).
+    Athena requires a dedicated output location per workgroup.
+    Example path: athena-results/abc123.csv
+  EOT
+  type    = string
+  default = "athena-results/"
+}
+
+variable "raw_data_expiry_days" {
+  description = <<-EOT
+    Number of days before raw data objects are permanently deleted.
+    Raw data is large (uncompressed JSON) and only needed for reprocessing.
+    180 days covers any realistic reprocessing window.
+  EOT
+  type    = number
+  default = 180
+
+  validation {
+    condition     = var.raw_data_expiry_days >= 30
+    error_message = "raw_data_expiry_days must be at least 30 days."
+  }
+}
+
+variable "processed_data_expiry_days" {
+  description = <<-EOT
+    Number of days before processed Parquet data is permanently deleted.
+    Processed data is compact and directly queried by Athena —
+    keep it longer than raw data.
+  EOT
+  type    = number
+  default = 365
+
+  validation {
+    condition     = var.processed_data_expiry_days >= 90
+    error_message = "processed_data_expiry_days must be at least 90 days."
+  }
+}
+
+variable "kms_key_deletion_window_days" {
+  description = <<-EOT
+    Number of days before a scheduled KMS key deletion is executed.
+    AWS enforces a minimum of 7 days and a maximum of 30 days.
+    This is a safety buffer to prevent accidental key deletions.
+  EOT
+  type    = number
+  default = 14
+
+  validation {
+    condition     = var.kms_key_deletion_window_days >= 7 && var.kms_key_deletion_window_days <= 30
+    error_message = "kms_key_deletion_window_days must be between 7 and 30 days."
+  }
+}
+
+variable "enable_data_bucket_versioning" {
+  description = <<-EOT
+    Whether to enable S3 versioning on the data lake bucket.
+    Versioning provides protection against accidental deletions and overwrites,
+    but may increase storage costs. Recommended for all environments, including prod.
+  EOT
+  type    = bool
+  default = true
+}
+
 # ---- Scheduler ----------------------------------------------
 
 variable "collection_interval" {

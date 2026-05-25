@@ -6,13 +6,15 @@
 # located in ./modules/<name>/.
 #
 # Build order (each depends on the one above it):
-#   1. foundation    → S3, IAM, KMS, Terraform backend   <-- Started to build
+#   1. foundation    → S3, IAM, KMS, Terraform backend   <-- ACTIVE
 #   2. ingestion     → API Gateway, Kinesis Firehose
 #   3. processing    → Collector Lambda, Transformer Lambda, DynamoDB
 #   4. scheduler     → EventBridge Scheduler          <-- ACTIVE
 #   5. analytics     → Glue Catalog, Athena
 #   6. observability → CloudWatch, SNS alerts
 #
+#   Terraform Backend       → Need foundation stack locally created 
+#                           → S3 bucket + DynamoDB table for Terraform state
 # Modules not yet built are shown as commented-out blocks with
 # their expected inputs documented for planning purposes.
 # =============================================================
@@ -27,13 +29,50 @@
 #
 # Status: TODO — build next
 # -------------------------------------------------------------
-# module "foundation" {
-#   source = "./modules/foundation"
+module "foundation" {
+  source = "./modules/foundation"
+  name_prefix = local.name_prefix
+  aws_region  = var.aws_region
+  tags        = local.common_tags
+  environment   = var.environment
+  raw_data_prefix = var.raw_data_prefix
+  processed_data_prefix = var.processed_data_prefix
+  athena_results_prefix = var.athena_results_prefix
+  raw_data_expiry_days = var.raw_data_expiry_days
+  processed_data_expiry_days = var.processed_data_expiry_days
+  kms_key_deletion_window_days = var.kms_key_deletion_window_days
+  enable_data_bucket_versioning = var.enable_data_bucket_versioning
+}
+
+# --------------------------------------------------------------
+# Remote State Backend for Terraform 
+# --------------------------------------------------------------
 #
-#   name_prefix = local.name_prefix
-#   aws_region  = var.aws_region
-#   tags        = local.common_tags
+# IMPORTANT — Bootstrap problem explained:
+# The S3 bucket and DynamoDB table for storing Terraform state
+# are created by the Foundation module (Foudation stack: 
+# S3 for data lake, KMS for entire project, S3 for Terraform state, 
+# DynamoDB for Terraform state locking).
+# This means we cannot configure the backend BEFORE the Foundation
+# stack exists. The correct workflow is:
+#
+# After migration, all state is stored remotely and team members
+# can collaborate safely with state locking via DynamoDB.
+#
+# ---------------------------------------------------------------
+# Uncomment the block below AFTER the Foundation stack is deployed:
+# ---------------------------------------------------------------
+
+# terraform {
+#   backend "s3" {
+#     bucket         = "terraform-states"   # created by foundation module
+#     key            = "earthquake-analytics/dev/terraform.tfstate"
+#     region         = "eu-central-1"
+#     dynamodb_table = "earthquake-analytics-dev-terraform-lock"    # created by foundation module
+#     encrypt        = true
+#   }
 # }
+
 
 
 # -------------------------------------------------------------
@@ -94,26 +133,26 @@
 # is built, replace the target_lambda_arn line with:
 #   target_lambda_arn = module.processing.collector_lambda_arn
 # -------------------------------------------------------------
-module "scheduler" {
-  source = "./modules/scheduler"
-
-  name_prefix         = local.name_prefix
-  schedule_group_name = "${local.name_prefix}-schedule-group"
-  schedule_name       = "${local.name_prefix}-usgs-collector"
-  schedule_expression = var.collection_interval
-  usgs_feed_url       = var.usgs_feed_url
-  usgs_feed_type      = var.usgs_feed_type
-  enabled             = true
-  tags                = local.common_tags
-
-  # Temporary override — replace with module.processing.collector_lambda_arn
-  # once Stack 3 (processing) is deployed.
-  target_lambda_arn = var.collector_lambda_arn_override
-
-  # Dead-letter queue wired in once observability module (Stack 6) is built:
-  # dead_letter_queue_arn = module.observability.scheduler_dlq_arn
-  dead_letter_queue_arn = null
-}
+# module "scheduler" {
+#   source = "./modules/scheduler"
+# 
+#   name_prefix         = local.name_prefix
+#   schedule_group_name = "${local.name_prefix}-schedule-group"
+#   schedule_name       = "${local.name_prefix}-usgs-collector"
+#   schedule_expression = var.collection_interval
+#   usgs_feed_url       = var.usgs_feed_url
+#   usgs_feed_type      = var.usgs_feed_type
+#   enabled             = true
+#   tags                = local.common_tags
+# 
+#   # Temporary override — replace with module.processing.collector_lambda_arn
+#   # once Stack 3 (processing) is deployed.
+#   target_lambda_arn = var.collector_lambda_arn_override
+# 
+#   # Dead-letter queue wired in once observability module (Stack 6) is built:
+#   # dead_letter_queue_arn = module.observability.scheduler_dlq_arn
+#   dead_letter_queue_arn = null
+# }
 
 
 # -------------------------------------------------------------

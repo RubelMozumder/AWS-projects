@@ -1,9 +1,65 @@
 # Ignore all files in deploy_scripts except shell scripts
 deploy_scripts/*
 !deploy_scripts/*.sh
-build/**/*
+build/
 **/build/**/*
 DebugSession
-**/.terraform*/
-**/.terraform*
-terraform.tfvars
+tmp/
+
+# =============================================================
+# Terraform — files that must NOT be committed
+# =============================================================
+
+# --- Local Terraform working directory -----------------------
+# Created by `terraform init`. Contains downloaded provider
+# binaries (100s of MB), cached modules, and internal state.
+# Each developer/CI run downloads its own copy via `terraform init`.
+# Committing it would bloat the repo and cause OS/arch conflicts
+# (a Linux binary won't work on macOS or Windows).
+**/.terraform/
+
+# --- Terraform lock file -------------------------------------
+# Records the exact provider versions and their checksums.
+# SHOULD be committed so that all team members and CI use the
+# same provider versions (like package-lock.json in npm).
+# Uncomment the line below ONLY if you intentionally want to
+# allow each developer to resolve their own versions (not recommended).
+# **/.terraform.lock.hcl
+
+# --- Local state files ---------------------------------------
+# terraform.tfstate and terraform.tfstate.backup hold the current
+# state of ALL deployed infrastructure, including sensitive values
+# (secrets, passwords, keys) in plain text.
+# Committing state exposes credentials and causes conflicts when
+# multiple people run Terraform simultaneously.
+# Use remote state (S3 backend) instead.
+**/terraform.tfstate
+**/terraform.tfstate.backup
+
+# --- Variable values file ------------------------------------
+# terraform.tfvars contains actual values for input variables.
+# It often includes sensitive data: account IDs, ARNs, API keys,
+# or environment-specific settings that differ per developer.
+# Use terraform.tfvars.example (committed) as a template instead.
+**/terraform.tfvars
+
+# --- Override files ------------------------------------------
+# Used for local temporary overrides during development.
+# These are personal/machine-specific and must not affect others.
+**/override.tf
+**/override.tf.json
+**/*_override.tf
+**/*_override.tf.json
+
+# --- Crash log -----------------------------------------------
+# If Terraform panics it writes crash.log with internal stack trace.
+# No value in version control — purely a local debugging artifact.
+**/crash.log
+**/crash.*.log
+
+# --- Plan output files ---------------------------------------
+# `terraform plan -out=tfplan` saves a binary plan file.
+# These are machine-specific, may contain sensitive resource diffs,
+# and are only valid for a single apply run.
+**/*.tfplan
+**/tfplan

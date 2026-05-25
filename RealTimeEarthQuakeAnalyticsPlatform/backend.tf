@@ -4,7 +4,7 @@
 #
 # IMPORTANT — Bootstrap problem explained:
 # The S3 bucket and DynamoDB table for storing Terraform state
-# are created by the Foundation module (Stack 1).
+# are created by the Foundation module (Stack 1: foundation stack).
 # This means we cannot configure the backend BEFORE the Foundation
 # stack exists. The correct workflow is:
 #
@@ -21,12 +21,12 @@
 # Uncomment the block below AFTER the Foundation stack is deployed:
 # ---------------------------------------------------------------
 
-# terraform {
-#   backend "s3" {
-#     bucket         = "terraform-states"   # created by foundation module
-#     key            = "earthquake-analytics/dev/terraform.tfstate"
-#     region         = "eu-central-1"
-#     dynamodb_table = "earthquake-analytics-dev-terraform-lock"    # created by foundation module
-#     encrypt        = true
-#   }
-# }
+terraform {
+  backend "s3" {
+    bucket         = "eq-analytics-dev-tf-state-897035677417"   # created by foundation module
+    key            = "earthquake-analytics/dev/terraform.tfstate"
+    region         = "eu-central-1"
+    dynamodb_table = "eq-analytics-dev-tf-lock"    # created by foundation module
+    encrypt        = true
+  }
+}
