@@ -162,6 +162,16 @@ resource "aws_kms_key" "main" {
     ]
   })
 
+  # IMPORTANT: Prevent accidental deletion during terraform destroy.
+  # This key encrypts S3 data and Terraform state.
+  # To enable destroy after intentionally removing this protection:
+  #   1. Remove or set to 'false': lifecycle { prevent_destroy = true }
+  #   2. Run: terraform apply
+  #   3. Then destroy can proceed.
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = var.tags
 }
 
@@ -196,7 +206,20 @@ resource "aws_s3_bucket" "data_lake" {
   # force_destroy: when true, `terraform destroy` empties the bucket
   # automatically before deleting it. Safe for dev — in prod set to false
   # so an accidental destroy never silently wipes data.
-  force_destroy = var.environment != "prod"
+  force_destroy = false
+  # force_destroy = var.environment != "prod"
+
+  # CRITICAL: Prevent accidental deletion of the data lake.
+  # This bucket contains earthquake data that is the foundation of the platform.
+  # Even if force_destroy=false, we also add prevent_destroy for extra protection.
+  # To enable destroy after intentionally removing this protection:
+  #   1. Remove or set to 'false': lifecycle { prevent_destroy = true }
+  #   2. Run: terraform apply
+  #   3. Then destroy can proceed (if force_destroy=false, bucket must be empty first).
+  lifecycle {
+    prevent_destroy = true
+  }
+
   tags = var.tags
 }
 
@@ -422,6 +445,17 @@ resource "aws_dynamodb_table" "terraform_lock" {
   # to any point within the last 35 days.
   point_in_time_recovery {
     enabled = true
+  }
+
+  # CRITICAL: Prevent accidental deletion of the lock table.
+  # Without this table, Terraform state locking breaks, allowing concurrent
+  # apply operations to corrupt the state file. To enable destroy after
+  # intentionally removing this protection:
+  #   1. Remove or set to 'false': lifecycle { prevent_destroy = true }
+  #   2. Run: terraform apply
+  #   3. Then destroy can proceed.
+  lifecycle {
+    prevent_destroy = true
   }
 
   tags = var.tags

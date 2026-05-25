@@ -27,6 +27,7 @@ terraform {
     key            = "earthquake-analytics/dev/terraform.tfstate"
     region         = "eu-central-1"
     dynamodb_table = "eq-analytics-dev-tf-lock"    # created by foundation module
+    use_lockfile   = true
     encrypt        = true
   }
 }
