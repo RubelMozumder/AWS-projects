@@ -94,7 +94,7 @@ output "backend_config_hint" {
       terraform {
         backend "s3" {
           bucket         = "<terraform_state_bucket_id>"
-          key            = "earthquake-analytics/terraform.tfstate"
+          key            = "eq-analytics/dev/terraform.tfstate"
           region         = "<aws_region>"
           dynamodb_table = "<terraform_lock_table_name>"
           encrypt        = true

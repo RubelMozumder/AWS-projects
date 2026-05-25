@@ -363,10 +363,13 @@ resource "aws_s3_bucket_lifecycle_configuration" "data_lake" {
 # =============================================================
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket        = "${var.name_prefix}-tf-state-${data.aws_caller_identity.current.account_id}"
-  force_destroy = false # never auto-delete state — protect against accidents
+  bucket        = "terraform-states-${data.aws_caller_identity.current.account_id}"
+  # force_destroy = false # never auto-delete state — protect against accidents
 
   tags = var.tags
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
 
 # Versioning is REQUIRED for Terraform remote state.
@@ -454,9 +457,9 @@ resource "aws_dynamodb_table" "terraform_lock" {
   #   1. Remove or set to 'false': lifecycle { prevent_destroy = true }
   #   2. Run: terraform apply
   #   3. Then destroy can proceed.
-  lifecycle {
-    prevent_destroy = true
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 
   tags = var.tags
 }

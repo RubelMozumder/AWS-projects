@@ -23,8 +23,8 @@
 
 terraform {
   backend "s3" {
-    bucket         = "eq-analytics-dev-tf-state-897035677417"   # created by foundation module
-    key            = "earthquake-analytics/dev/terraform.tfstate"
+    bucket         = "terraform-states-897035677417"   # created by foundation module
+    key            = "eq-analytics/dev/terraform.tfstate"
     region         = "eu-central-1"
     dynamodb_table = "eq-analytics-dev-tf-lock"    # created by foundation module
     use_lockfile   = true
