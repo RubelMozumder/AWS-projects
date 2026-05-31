@@ -5,6 +5,11 @@ build/
 **/build/**/*
 DebugSession
 tmp/
+nomad-FAIR/
+nomad-distro-template/
+nomad-distro/
+nomad-docs/
+
 
 # =============================================================
 # Terraform — files that must NOT be committed
