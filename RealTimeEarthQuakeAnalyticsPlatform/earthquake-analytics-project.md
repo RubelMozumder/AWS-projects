@@ -164,23 +164,13 @@ USGS Live Feed (every 5 min)
 ### Layer-by-layer description
 
 #### Layer 1 — Data Collection (EventBridge + Collector Lambda)
-An **EventBridge Scheduler** triggers a **Collector Lambda** every 5 minutes.
-The Lambda fetches the latest earthquake GeoJSON feed from USGS, deduplicates events
-already seen (using a DynamoDB table or S3 marker), and posts each new event as a
-separate JSON message to the API Gateway endpoint.
+An **EventBridge Scheduler** triggers a **Collector Lambda** every 5 minutes. The Lambda fetches the latest earthquake GeoJSON feed from USGS, deduplicates events already seen (using a DynamoDB table or S3 marker), and posts each new event as a separate JSON message to the API Gateway endpoint.
 
 #### Layer 2 — Ingestion (API Gateway)
-A **REST API Gateway** exposes a `POST /ingest` endpoint. It acts as the controlled
-entry point to the pipeline — providing throttling, request validation, and a clean
-separation between data producers and the streaming backend. In a real-world clickstream
-scenario this is where your web SDK would post events directly. Here, the Collector
-Lambda plays that role.
+A **REST API Gateway** exposes a `POST /ingest` endpoint. It acts as the controlled entry point to the pipeline — providing throttling, request validation, and a clean separation between data producers and the streaming backend. In a real-world clickstream scenario this is where your web SDK would post events directly. Here, the Collector Lambda plays that role.
 
 #### Layer 3 — Streaming & Buffering (Kinesis Data Firehose)
-API Gateway forwards payloads directly to a **Kinesis Data Firehose** delivery stream.
-Firehose buffers incoming records (configurable: up to 128 MB or 900 seconds) and
-delivers them to S3, optionally invoking a Lambda for inline transformation before
-delivery. This is the heart of the streaming layer.
+API Gateway forwards payloads directly to a **Kinesis Data Firehose** delivery stream. Firehose buffers incoming records (configurable: up to 128 MB or 900 seconds) and delivers them to S3, optionally invoking a Lambda for inline transformation before delivery. This is the heart of the streaming layer.
 
 #### Layer 4 — Transformation (Transformer Lambda)
 A **Lambda function** is attached to Firehose as a **data transformation processor**.

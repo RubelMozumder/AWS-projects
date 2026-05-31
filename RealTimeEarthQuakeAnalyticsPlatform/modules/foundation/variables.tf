@@ -119,3 +119,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "lambda_function_bucket" {
+  description = "S3 bucket name for storing Lambda deployment packages."
+  type        = string
+  default     = "lambda-code-897035677417"
+}

@@ -146,6 +146,45 @@ variable "usgs_feed_type" {
   default     = "all_hour"
 }
 
+# ---- Collector Lambda ---------------------------------------
+
+variable "lambda_function_bucket" {
+  description = "S3 bucket name where Lambda deployment packages are stored"
+  type        = string
+  default     = "lambda-code-897035677417"
+  
+}
+
+variable "collector_lambda_handler" {
+  description = "Lambda handler in the format <module>.<function>"
+  type        = string
+  default     = "lambda_collector.lambda_handler"
+}
+
+variable "collector_lambda_runtime" {
+  description = "Python runtime for the collector Lambda"
+  type        = string
+  default     = "python3.12"
+}
+
+variable "collector_lambda_memory_size" {
+  description = "Memory size in MB for the collector Lambda"
+  type        = number
+  default     = 256
+}
+
+variable "collector_lambda_timeout" {
+  description = "Timeout in seconds for the collector Lambda"
+  type        = number
+  default     = 30
+}
+
+variable "collector_dry_run" {
+  description = "When true, the collector Lambda fetches events but does not POST to the ingest endpoint"
+  type        = bool
+  default     = false
+}
+
 # ---- Development override -----------------------------------
 # Used during development before the processing module (Stack 3)
 # is built. Replace with module.processing.collector_lambda_arn

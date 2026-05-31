@@ -8,6 +8,7 @@ locals {
   # Standard prefix for every resource name: "<project>-<env>"
   # Example: "eq-analytics-dev"
   name_prefix = "${var.project_name}-${var.environment}"
+  collector_lambda_s3_key = "${var.project_name}/collector/lambda_collector.zip"
 
   # Common tags applied to every resource via each module's tags input.
   # The provider-level `default_tags` already covers Project/Environment/ManagedBy,

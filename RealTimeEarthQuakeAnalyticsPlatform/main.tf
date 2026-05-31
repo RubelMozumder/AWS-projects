@@ -42,6 +42,7 @@ module "foundation" {
   processed_data_expiry_days = var.processed_data_expiry_days
   kms_key_deletion_window_days = var.kms_key_deletion_window_days
   enable_data_bucket_versioning = var.enable_data_bucket_versioning
+  lambda_function_bucket = var.lambda_function_bucket
 }
 
 # --------------------------------------------------------------
@@ -65,7 +66,7 @@ module "foundation" {
 
 # terraform {
 #   backend "s3" {
-#     bucket         = "terraform-states"   # created by foundation module
+#     bucket         = "terraform-states-897035677417"   # created by foundation module
 #     key            = "earthquake-analytics/dev/terraform.tfstate"
 #     region         = "eu-central-1"
 #     dynamodb_table = "earthquake-analytics-dev-terraform-lock"    # created by foundation module
@@ -98,7 +99,40 @@ module "foundation" {
 
 
 # -------------------------------------------------------------
-# Stack 3: Processing
+# Stack 3a: Collector Lambda                   ← ACTIVE
+# -------------------------------------------------------------
+# Deploys the collector Lambda function.
+# The Lambda fetches the USGS earthquake feed and forwards events
+# to the ingest endpoint (API Gateway, once Stack 2 is deployed).
+# Deployment package (.zip) must be uploaded to S3 before apply:
+#   ./pythonCode/collector/zip_python_lambda.sh src lambda_collector.zip
+#   aws s3 cp lambda_collector.zip s3://<lambda_function_bucket>/<s3_key>
+#
+# Status: ACTIVE
+# Depends on: foundation (lambda_function_bucket)
+# -------------------------------------------------------------
+module "collector_lambda" {
+  source = "./modules/collector_lambda"
+
+  lambda_function_name = "${local.name_prefix}-collector"
+  lambda_s3_bucket     = var.lambda_function_bucket
+  lambda_s3_key        = local.collector_lambda_s3_key
+  lambda_handler       = var.collector_lambda_handler
+  lambda_runtime       = var.collector_lambda_runtime
+  lambda_memory_size   = var.collector_lambda_memory_size
+  lambda_timeout       = var.collector_lambda_timeout
+  lambda_environment   = {
+    USGS_FEED_URL          = var.usgs_feed_url
+    USGS_FEED_TYPE         = var.usgs_feed_type
+    COLLECTOR_DRY_RUN      = var.collector_dry_run
+    # INGEST_API_URL is set once API Gateway (Stack 2) is deployed:
+    # INGEST_API_URL       = module.ingestion.api_gateway_invoke_url
+  }
+}
+
+
+# -------------------------------------------------------------
+# Stack 3b: Processing (Full)
 # -------------------------------------------------------------
 # Collector Lambda: fetches USGS feed, posts events to API Gateway
 # Transformer Lambda: enriches and normalises records for Firehose

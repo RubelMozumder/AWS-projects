@@ -345,6 +345,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "data_lake" {
   }
 }
 
+# =============================================================
+# Lambda Code bucket
+# =============================================================
+# Stores Lambda deployment packages (zip files) for all stacks.
+# This bucket is shared across stacks to simplify deployment and avoid
+# cross-stack dependencies.
+# =============================================================
+
+data "aws_s3_bucket" "lambda_code" {
+  bucket = var.lambda_function_bucket
+}
 
 # =============================================================
 # S3 — Terraform State Bucket
