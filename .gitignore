@@ -69,6 +69,7 @@ nomad-docs/
 # Committing it would bloat the repo and cause OS/arch conflicts
 # (a Linux binary won't work on macOS or Windows).
 **/.terraform/
+tfplan
 
 # --- Terraform lock file -------------------------------------
 # Records the exact provider versions and their checksums.

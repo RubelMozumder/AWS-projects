@@ -1,3 +1,9 @@
+# Create a CloudWatch log group for the collector Lambda function
+resource "aws_cloudwatch_log_group" "collector_lambda" {
+  name              = "/aws/lambda/${var.lambda_function_name}"
+  retention_in_days = 14
+  tags              = var.tags
+}
 resource "aws_lambda_function" "collector" {
   function_name = var.lambda_function_name
   s3_bucket     = var.lambda_s3_bucket

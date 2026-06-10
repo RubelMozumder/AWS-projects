@@ -185,18 +185,3 @@ variable "collector_dry_run" {
   default     = false
 }
 
-# ---- Development override -----------------------------------
-# Used during development before the processing module (Stack 3)
-# is built. Replace with module.processing.collector_lambda_arn
-# once the processing module exists.
-
-variable "collector_lambda_arn_override" {
-  description = <<-EOT
-    Temporary override for the Collector Lambda ARN.
-    Used while the processing module is not yet deployed.
-    Once Stack 3 (processing) is built, remove this variable
-    and wire: target_lambda_arn = module.processing.collector_lambda_arn
-  EOT
-  type        = string
-  default     = null
-}

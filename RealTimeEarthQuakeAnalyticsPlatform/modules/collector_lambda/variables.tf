@@ -40,3 +40,9 @@ variable "lambda_environment" {
   type        = map(string)
   default     = {}
 }
+
+variable "tags" {
+  description = "Map of tags applied to all resources in this module."
+  type        = map(string)
+  default     = {}
+}

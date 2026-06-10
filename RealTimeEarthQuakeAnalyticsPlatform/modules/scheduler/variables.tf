@@ -57,7 +57,7 @@ variable "schedule_expression" {
 }
 
 variable "enabled" {
-  description = <<- EOT
+  description = <<-EOT
     Controls schedule state. true = ENABLED (actively firing). false = DISABLED
     (paused, useful during development or debugging).
   EOT
@@ -85,7 +85,7 @@ variable "target_lambda_arn" {
 # ---- USGS Feed ----------------------------------------------
 
 variable "usgs_feed_url" {
-  description = <<- EOT
+  description = <<-EOT
     Full URL of the USGS GeoJSON earthquake feed. 
     Passed to the Collector Lambda as the event payload's feed_url field.
   EOT

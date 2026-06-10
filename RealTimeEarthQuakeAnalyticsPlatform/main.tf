@@ -121,6 +121,7 @@ module "collector_lambda" {
   lambda_runtime       = var.collector_lambda_runtime
   lambda_memory_size   = var.collector_lambda_memory_size
   lambda_timeout       = var.collector_lambda_timeout
+  tags                 = local.common_tags
   lambda_environment   = {
     USGS_FEED_URL          = var.usgs_feed_url
     USGS_FEED_TYPE         = var.usgs_feed_type
@@ -167,26 +168,26 @@ module "collector_lambda" {
 # is built, replace the target_lambda_arn line with:
 #   target_lambda_arn = module.processing.collector_lambda_arn
 # -------------------------------------------------------------
-# module "scheduler" {
-#   source = "./modules/scheduler"
-# 
-#   name_prefix         = local.name_prefix
-#   schedule_group_name = "${local.name_prefix}-schedule-group"
-#   schedule_name       = "${local.name_prefix}-usgs-collector"
-#   schedule_expression = var.collection_interval
-#   usgs_feed_url       = var.usgs_feed_url
-#   usgs_feed_type      = var.usgs_feed_type
-#   enabled             = true
-#   tags                = local.common_tags
-# 
-#   # Temporary override — replace with module.processing.collector_lambda_arn
-#   # once Stack 3 (processing) is deployed.
-#   target_lambda_arn = var.collector_lambda_arn_override
-# 
-#   # Dead-letter queue wired in once observability module (Stack 6) is built:
-#   # dead_letter_queue_arn = module.observability.scheduler_dlq_arn
-#   dead_letter_queue_arn = null
-# }
+module "scheduler" {
+  source = "./modules/scheduler"
+
+  name_prefix         = local.name_prefix
+  schedule_group_name = "${local.name_prefix}-schedule-group"
+  schedule_name       = "${local.name_prefix}-usgs-collector"
+  schedule_expression = var.collection_interval
+  usgs_feed_url       = var.usgs_feed_url
+  usgs_feed_type      = var.usgs_feed_type
+  enabled             = true
+  tags                = local.common_tags
+
+  # Temporary override — replace with module.processing.collector_lambda_arn
+  # once Stack 3 (processing) is deployed.
+  target_lambda_arn = module.collector_lambda.lambda_function_arn
+
+  # Dead-letter queue wired in once observability module (Stack 6) is built:
+  # dead_letter_queue_arn = module.observability.scheduler_dlq_arn
+  dead_letter_queue_arn = null
+}
 
 
 # -------------------------------------------------------------
