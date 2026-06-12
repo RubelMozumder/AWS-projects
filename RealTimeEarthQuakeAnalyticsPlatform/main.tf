@@ -30,19 +30,19 @@
 # Status: TODO — build next
 # -------------------------------------------------------------
 module "foundation" {
-  source = "./modules/foundation"
-  name_prefix = local.name_prefix
-  aws_region  = var.aws_region
-  tags        = local.common_tags
-  environment   = var.environment
-  raw_data_prefix = var.raw_data_prefix
-  processed_data_prefix = var.processed_data_prefix
-  athena_results_prefix = var.athena_results_prefix
-  raw_data_expiry_days = var.raw_data_expiry_days
-  processed_data_expiry_days = var.processed_data_expiry_days
-  kms_key_deletion_window_days = var.kms_key_deletion_window_days
+  source                        = "./modules/foundation"
+  name_prefix                   = local.name_prefix
+  aws_region                    = var.aws_region
+  tags                          = local.common_tags
+  environment                   = var.environment
+  raw_data_prefix               = var.raw_data_prefix
+  processed_data_prefix         = var.processed_data_prefix
+  athena_results_prefix         = var.athena_results_prefix
+  raw_data_expiry_days          = var.raw_data_expiry_days
+  processed_data_expiry_days    = var.processed_data_expiry_days
+  kms_key_deletion_window_days  = var.kms_key_deletion_window_days
   enable_data_bucket_versioning = var.enable_data_bucket_versioning
-  lambda_function_bucket = var.lambda_function_bucket
+  lambda_function_bucket        = var.lambda_function_bucket
 }
 
 # --------------------------------------------------------------
@@ -77,25 +77,28 @@ module "foundation" {
 
 
 # -------------------------------------------------------------
-# Stack 2: Ingestion
+# Stack 2: Ingestion                           ← ACTIVE
 # -------------------------------------------------------------
 # API Gateway (REST) → Kinesis Data Firehose → S3
 # The API Gateway exposes a POST /ingest endpoint.
-# Firehose buffers records and calls the Transformer Lambda
-# before writing to S3.
+# Firehose buffers records and delivers them to S3 raw/.
 #
-# Status: TODO
-# Depends on: foundation (s3_bucket_id), processing (transformer_lambda_arn)
+# The Transformer Lambda processor (Stack 3b) is not wired in yet.
+# Once Stack 3b is built, add a processing_configuration block to
+# the Firehose stream and extend the firehose IAM role policy.
+#
+# Status: ACTIVE
+# Depends on: foundation (s3_bucket_arn, kms_key_arn)
 # -------------------------------------------------------------
-# module "ingestion" {
-#   source = "./modules/ingestion"
-#
-#   name_prefix            = local.name_prefix
-#   s3_bucket_id           = module.foundation.data_bucket_id
-#   s3_bucket_arn          = module.foundation.data_bucket_arn
-#   transformer_lambda_arn = module.processing.transformer_lambda_arn
-#   tags                   = local.common_tags
-# }
+module "ingestion" {
+  source = "./modules/ingestion"
+
+  name_prefix     = local.name_prefix
+  s3_bucket_arn   = module.foundation.data_bucket_arn
+  kms_key_arn     = module.foundation.kms_key_arn
+  raw_data_prefix = var.raw_data_prefix
+  tags            = local.common_tags
+}
 
 
 # -------------------------------------------------------------
@@ -122,12 +125,12 @@ module "collector_lambda" {
   lambda_memory_size   = var.collector_lambda_memory_size
   lambda_timeout       = var.collector_lambda_timeout
   tags                 = local.common_tags
-  lambda_environment   = {
-    USGS_FEED_URL          = var.usgs_feed_url
-    USGS_FEED_TYPE         = var.usgs_feed_type
-    COLLECTOR_DRY_RUN      = var.collector_dry_run
-    # INGEST_API_URL is set once API Gateway (Stack 2) is deployed:
-    # INGEST_API_URL       = module.ingestion.api_gateway_invoke_url
+  lambda_environment = {
+    USGS_FEED_URL     = var.usgs_feed_url
+    USGS_FEED_TYPE    = var.usgs_feed_type
+    COLLECTOR_DRY_RUN = var.collector_dry_run
+    INGEST_API_URL    = module.ingestion.api_gateway_invoke_url
+    INGEST_API_KEY    = module.ingestion.api_key_value
   }
 }
 

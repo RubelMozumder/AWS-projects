@@ -40,8 +40,8 @@ variable "raw_data_prefix" {
     from the USGS feed — before any transformation.
     Example path: raw/year=2025/month=05/day=23/hour=14/record.json.gz
   EOT
-  type    = string
-  default = "raw/"
+  type        = string
+  default     = "raw/"
 }
 
 variable "processed_data_prefix" {
@@ -50,8 +50,8 @@ variable "processed_data_prefix" {
     the Transformer Lambda in Parquet format.
     Example path: processed/year=2025/month=05/day=23/record.parquet
   EOT
-  type    = string
-  default = "processed/"
+  type        = string
+  default     = "processed/"
 }
 
 variable "athena_results_prefix" {
@@ -60,8 +60,8 @@ variable "athena_results_prefix" {
     Athena requires a dedicated output location per workgroup.
     Example path: athena-results/abc123.csv
   EOT
-  type    = string
-  default = "athena-results/"
+  type        = string
+  default     = "athena-results/"
 }
 
 variable "raw_data_expiry_days" {
@@ -70,8 +70,8 @@ variable "raw_data_expiry_days" {
     Raw data is large (uncompressed JSON) and only needed for reprocessing.
     180 days covers any realistic reprocessing window.
   EOT
-  type    = number
-  default = 180
+  type        = number
+  default     = 180
 
   validation {
     condition     = var.raw_data_expiry_days >= 30
@@ -85,8 +85,8 @@ variable "processed_data_expiry_days" {
     Processed data is compact and directly queried by Athena —
     keep it longer than raw data.
   EOT
-  type    = number
-  default = 365
+  type        = number
+  default     = 365
 
   validation {
     condition     = var.processed_data_expiry_days >= 90
@@ -100,8 +100,8 @@ variable "kms_key_deletion_window_days" {
     AWS enforces a minimum of 7 days and a maximum of 30 days.
     This is a safety buffer to prevent accidental key deletions.
   EOT
-  type    = number
-  default = 14
+  type        = number
+  default     = 14
 
   validation {
     condition     = var.kms_key_deletion_window_days >= 7 && var.kms_key_deletion_window_days <= 30
@@ -115,8 +115,8 @@ variable "enable_data_bucket_versioning" {
     Versioning provides protection against accidental deletions and overwrites,
     but may increase storage costs. Recommended for all environments, including prod.
   EOT
-  type    = bool
-  default = true
+  type        = bool
+  default     = true
 }
 
 # ---- Scheduler ----------------------------------------------
@@ -152,7 +152,7 @@ variable "lambda_function_bucket" {
   description = "S3 bucket name where Lambda deployment packages are stored"
   type        = string
   default     = "lambda-code-897035677417"
-  
+
 }
 
 variable "collector_lambda_handler" {
@@ -182,6 +182,6 @@ variable "collector_lambda_timeout" {
 variable "collector_dry_run" {
   description = "When true, the collector Lambda fetches events but does not POST to the ingest endpoint"
   type        = bool
-  default     = false
+  default     = true
 }
 

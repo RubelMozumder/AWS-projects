@@ -75,11 +75,17 @@ output "terraform_lock_table_arn" {
   value       = module.foundation.terraform_lock_table_arn
 }
 
-# ---- Ingestion (TODO) --------------------------------------
-# output "api_gateway_invoke_url" {
-#   description = "Invoke URL for the ingestion API Gateway"
-#   value       = module.ingestion.api_gateway_invoke_url
-# }
+# ---- Ingestion ----------------------------------------------
+
+output "api_gateway_invoke_url" {
+  description = "Full invoke URL for POST /ingest. Set as INGEST_API_URL in the collector Lambda."
+  value       = module.ingestion.api_gateway_invoke_url
+}
+
+output "firehose_stream_name" {
+  description = "Name of the Kinesis Firehose raw delivery stream."
+  value       = module.ingestion.firehose_stream_name
+}
 
 # ---- Processing (TODO) -------------------------------------
 # output "collector_lambda_name" {

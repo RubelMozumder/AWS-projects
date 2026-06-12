@@ -374,7 +374,7 @@ data "aws_s3_bucket" "lambda_code" {
 # =============================================================
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket        = "terraform-states-${data.aws_caller_identity.current.account_id}"
+  bucket = "terraform-states-${data.aws_caller_identity.current.account_id}"
   # force_destroy = false # never auto-delete state — protect against accidents
 
   tags = var.tags

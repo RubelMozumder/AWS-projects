@@ -22,7 +22,7 @@ variable "raw_data_prefix" {
     from the USGS feed — before any transformation.
     Example path: raw/year=2025/month=05/day=23/hour=14/record.json.gz
   EOT
-  type    = string
+  type        = string
 }
 
 variable "processed_data_prefix" {
@@ -31,7 +31,7 @@ variable "processed_data_prefix" {
     the Transformer Lambda in Parquet format.
     Example path: processed/year=2025/month=05/day=23/record.parquet
   EOT
-  type    = string
+  type        = string
 }
 
 variable "athena_results_prefix" {
@@ -40,7 +40,7 @@ variable "athena_results_prefix" {
     Athena requires a dedicated output location per workgroup.
     Example path: athena-results/abc123.csv
   EOT
-  type    = string
+  type        = string
 }
 
 variable "raw_data_expiry_days" {
@@ -49,7 +49,7 @@ variable "raw_data_expiry_days" {
     Raw data is large (uncompressed JSON) and only needed for reprocessing.
     90 days covers any realistic reprocessing window.
   EOT
-  type    = number
+  type        = number
 
   validation {
     condition     = var.raw_data_expiry_days >= 30
@@ -63,7 +63,7 @@ variable "processed_data_expiry_days" {
     Processed data is compact and directly queried by Athena —
     keep it longer than raw data.
   EOT
-  type    = number
+  type        = number
 
   validation {
     condition     = var.processed_data_expiry_days >= 90
@@ -77,7 +77,7 @@ variable "environment" {
     Used to gate destructive settings — e.g. force_destroy is
     disabled automatically when environment is "prod".
   EOT
-  type = string
+  type        = string
 
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
@@ -92,7 +92,7 @@ variable "enable_data_bucket_versioning" {
     point-in-time recovery of any object.
     Recommended: true for production, can be false for dev to save cost.
   EOT
-  type    = bool
+  type        = bool
 }
 
 # ---- KMS ----------------------------------------------------
@@ -104,7 +104,7 @@ variable "kms_key_deletion_window_days" {
     During this window the deletion can be cancelled.
     Use 7 in dev (faster teardown), 30 in prod (safety net).
   EOT
-  type    = number
+  type        = number
 
   validation {
     condition     = var.kms_key_deletion_window_days >= 7 && var.kms_key_deletion_window_days <= 30

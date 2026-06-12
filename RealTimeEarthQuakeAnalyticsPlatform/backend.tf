@@ -23,10 +23,10 @@
 
 terraform {
   backend "s3" {
-    bucket         = "terraform-states-897035677417"   # created by foundation module
+    bucket         = "terraform-states-897035677417" # created by foundation module
     key            = "eq-analytics/dev/terraform.tfstate"
     region         = "eu-central-1"
-    dynamodb_table = "eq-analytics-dev-tf-lock"    # created by foundation module
+    dynamodb_table = "eq-analytics-dev-tf-lock" # created by foundation module
     use_lockfile   = true
     encrypt        = true
   }
