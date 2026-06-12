@@ -1,0 +1,9 @@
+{
+  "source": "eventbridge-scheduler",
+  "feed_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson",
+  "feed_type": "all_hour",
+  "ingest_url": "http://localhost:8080/ingest",
+  "timeout_seconds": 8,
+  "max_events": 5,
+  "dry_run": false
+}

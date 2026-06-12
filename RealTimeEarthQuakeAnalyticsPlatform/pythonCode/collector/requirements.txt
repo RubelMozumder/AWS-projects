@@ -1,0 +1,10 @@
+# === Shared dependencies (local & AWS Lambda) ===
+# (Add any packages needed in both environments below)
+
+# === Local development only ===
+# boto3 is required for local testing and development.
+boto3
+
+# === AWS Lambda environment only ===
+# Note: AWS Lambda includes boto3 and botocore by default, so you do not need to package them for deployment.
+# If you add other AWS-only dependencies, list them here.
