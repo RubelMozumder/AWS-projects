@@ -60,3 +60,77 @@ Given your choices (MVP-first, MongoDB Atlas, self-managed Temporal, North later
   - OpenSearch storage/IO
   - Atlas tier and storage growth
   - potential CDN/data transfer if global GUI traffic is high
+
+## 6. Development environment cost (decided)
+
+**Decision: Scenario B — cluster stays up for the full sprint, EC2 nodes scaled to 0 when not working.**
+
+Rationale: avoids the 15-minute cluster rebuild each morning while still saving EC2 cost during idle hours. EKS control plane stays live so kubectl access, dashboards, and Temporal UI remain reachable at any time.
+
+### Configuration
+
+| Parameter | Value |
+|---|---|
+| Cluster lifetime | 5 days (120 hours) |
+| Active working hours | 10 hours/day × 5 days = 50 hours |
+| App replicas | 4 (from `nomad-prod-develop.yaml`) |
+| Worker replicas | 3 min → 15 max (KEDA, 8Gi request / 64Gi limit) |
+| Databases | MongoDB Atlas M0 (free), Elasticsearch + PostgreSQL in-cluster |
+| Node strategy | Spot instances, scaled to 0 outside working hours |
+
+### Cost breakdown (5-day sprint)
+
+| Service | Rate | Calculation | Cost |
+|---|---|---|---|
+| EKS control plane | $0.10/hr | 120hr × $0.10 | $12.00 |
+| 2 × r5.2xlarge spot (nodes) | ~$0.12/hr each | 50hr × 2 × $0.12 | $12.00 |
+| MongoDB Atlas M0 | free | — | $0.00 |
+| Elasticsearch (in-cluster) | covered by EC2 | — | $0.00 |
+| PostgreSQL for Temporal (in-cluster) | covered by EC2 | — | $0.00 |
+| EFS 100GB | $0.30/GB/month | 100GB × $0.30 × (5/30) | $5.00 |
+| ALB | $0.0225/hr | 120hr × $0.0225 | $2.70 |
+| NAT Gateway (1 AZ) | $0.045/hr + $0.045/GB | 120hr × $0.045 + ~50GB data | $7.65 |
+| Data transfer out | $0.09/GB | ~5GB dev traffic | $0.45 |
+| CloudWatch logs | $0.50/GB | ~5GB logs | $2.50 |
+| **Total** | | | **~$42** |
+
+### Node scale-down approach
+
+Scale the node group to 0 at end of working session, back to 2 at start:
+
+```bash
+# scale down (end of day)
+aws eks update-nodegroup-config \
+  --cluster-name nomad-dev \
+  --nodegroup-name worker-spot \
+  --scaling-config minSize=0,maxSize=2,desiredSize=0
+
+# scale up (start of day)
+aws eks update-nodegroup-config \
+  --cluster-name nomad-dev \
+  --nodegroup-name worker-spot \
+  --scaling-config minSize=2,maxSize=5,desiredSize=2
+```
+
+Or automate with EventBridge Scheduler (cron) triggering a Lambda that calls the above — adds ~$0 cost at this scale.
+
+### Node sizing rationale
+
+Minimum RAM needed for dev pods at request level:
+
+| Workload | vCPU | RAM |
+|---|---|---|
+| 4 app replicas | 2 | 8Gi |
+| 3 workers (min) | 6 | 24Gi |
+| cpuworker × 1 | 1 | 4Gi |
+| Temporal + PostgreSQL | 0.8 | 1.5Gi |
+| Elasticsearch (in-cluster) | 1 | 2Gi |
+| MongoDB (in-cluster) | 0.5 | 1Gi |
+| kube-system + KEDA | 1 | 2Gi |
+| **Total** | **~12** | **~43Gi** |
+
+Two r5.2xlarge nodes (8 vCPU, 64GB each = 128GB total) gives comfortable headroom.
+
+### Monthly equivalent (if running the same pattern every week)
+
+~$42 × (30/5) ≈ **$252/month** — significantly cheaper than the full always-on dev estimate of ~$390/month.

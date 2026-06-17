@@ -11,6 +11,69 @@ nomad-distro-template/
 nomad-docs/
 
 # =============================================================
+# Python — files that must NOT be committed
+# =============================================================
+
+# --- Byte-compiled / optimised source ------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyo
+
+# --- Distribution / packaging --------------------------------
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+wheels/
+*.egg-link
+.installed.cfg
+MANIFEST
+
+# --- Virtual environments ------------------------------------
+.venv/
+venv/
+env/
+ENV/
+.virtualenv/
+
+# --- Environment / secrets -----------------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+
+# --- Test & coverage -----------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+nosetests.xml
+htmlcov/
+.tox/
+
+# --- Type checkers & linters ---------------------------------
+.mypy_cache/
+.ruff_cache/
+.pytype/
+pyrightconfig.json
+
+# --- Jupyter -------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- Misc ----------------------------------------------------
+pip-log.txt
+pip-delete-this-directory.txt
+*.log
+
+# =============================================================
 # Terraform — files that must NOT be committed
 # =============================================================
 
